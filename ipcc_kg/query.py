@@ -409,6 +409,21 @@ class IPCCGraph:
                        aliases, groups, series, topics,
                        len(self._by_concept.get(term_id, ())))
 
+    def explore(
+        self, query: str, *, wg: str | None = None, limit: int = 20,
+        related_concepts: int = 5, match: MatchMode = "auto",
+    ) -> "KnowledgeSubgraph":
+        """Select a focused, source-backed RDF subgraph for visualization.
+
+        The returned object contains a query-specific RDF graph and ranked
+        figure hits; rendering will be added by the visualization module.
+        """
+        from .subgraph import build_subgraph
+        return build_subgraph(
+            self, query, wg=wg, limit=limit,
+            related_concepts=related_concepts, match=match,
+        )
+
     def figure(self, figure_id: str) -> Figure:
         """Retrieve the original figure record and all caption mention evidence."""
         figure_id = _nonempty(figure_id, "figure_id")

@@ -5,9 +5,8 @@ Caption-mention evidence is displayed in the details panel rather than
 inventing edges between concepts. Image references are loaded on selection;
 no image pixels are analyzed or bundled into the export.
 
-The HTML uses a pinned vis-network standalone browser bundle. Rendering the
-network (and retrieving remote IPCC images) requires internet connectivity,
-but the exported HTML retains a readable fallback list of original sources.
+The browser graph is rendered using native SVG and requires no network or
+JavaScript dependencies. Only remote IPCC image previews require connectivity.
 """
 
 from __future__ import annotations
@@ -31,10 +30,6 @@ if TYPE_CHECKING:
     from .subgraph import KnowledgeSubgraph
 
 
-_NETWORK_SCRIPT = (
-    "https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.9/"
-    "standalone/umd/vis-network.min.js"
-)
 _MAX_VISIBLE_EVIDENCE = 12
 
 
@@ -219,6 +214,7 @@ def _visualization_data(view: KnowledgeSubgraph) -> dict:
         "shown_figures": len(view.figures),
         "nodes": nodes,
         "edges": edges,
+        "figure_order": [str(resource_iri("figure", f.figure_id)) for f in view.figures],
         "details": details,
         "initial": initial,
     }
@@ -230,240 +226,287 @@ _HTML_DOCUMENT = r'''<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<title>IPCC knowledge graph — __IPCC_TITLE__</title>
+<title>IPCC AR6 — __IPCC_TITLE__</title>
 <style>
 :root {font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  color:#1d2939;background:#f8fafc;font-size:14px}
+  color:#203047;background:#fff;font-size:14px}
 * {box-sizing:border-box}
 body {margin:0}
-header {display:flex;justify-content:space-between;align-items:center;gap:12px;
-  padding:13px 18px;border-bottom:1px solid #e2e8f0;background:white}
-header h1 {font-size:16px;margin:0 0 3px;font-weight:650}
-.subtle {color:#64748b;font-size:12px}
-.toolbar {display:flex;align-items:center;gap:8px}
-button {background:#fff;color:#334155;cursor:pointer;border:1px solid #cbd5e1;
-  border-radius:8px;padding:7px 11px;font:inherit}
+header {padding:15px 20px 12px;border-bottom:1px solid #e2e8f0}
+header h1 {font-size:20px;letter-spacing:-.02em;font-weight:650;margin:0 0 4px}
+.subtle {font-size:12px;color:#64748b;line-height:1.5}
+.toolbar {display:flex;align-items:center;justify-content:space-between;
+  gap:8px;flex-wrap:wrap;padding:8px 20px;border-bottom:1px solid #e2e8f0}
+.tabs {display:flex;gap:5px}
+button {font:inherit;cursor:pointer;border:1px solid #cbd5e1;
+  background:white;color:#24415e;padding:7px 11px;border-radius:8px}
 button:hover {background:#f1f5f9}
-.layout {display:grid;grid-template-columns:minmax(0,1fr) 300px;
-  height:calc(100vh - 114px);min-height:420px}
-#network {min-width:0;background:#fbfdff}
-#details {padding:18px;overflow:auto;background:white;border-left:1px solid #e2e8f0}
-#details h2 {margin:0 0 8px;font-size:16px;overflow-wrap:anywhere}
-#details h3 {font-size:12px;letter-spacing:.02em;text-transform:uppercase;
-  color:#64748b;margin:18px 0 8px}
-#details p {line-height:1.5;margin:8px 0;overflow-wrap:anywhere}
-#details .meta {font-size:12px;color:#475569;overflow-wrap:anywhere}
-#details img {width:100%;max-height:245px;object-fit:contain;background:#f1f5f9;
-  border:1px solid #e2e8f0;border-radius:8px}
-#details a {color:#0758a6;overflow-wrap:anywhere}
-#details .evidence {font-size:12px;border-left:3px solid #b5d4c4;
-  margin:8px 0;padding:6px 9px;background:#f5faf7;overflow-wrap:anywhere}
-#details .context {font-size:12px;color:#475569;margin:6px 0}
-.legend {display:flex;gap:13px;flex-wrap:wrap;align-items:center;
-  padding:12px 18px;background:white;border-top:1px solid #e2e8f0;
-  color:#475569;font-size:11px}
-.legend span {display:flex;align-items:center;gap:5px}
-.dot {height:10px;width:10px;border-radius:50%;display:inline-block}
-.alert {font-size:12px;color:#9a3412;background:#fff7ed;padding:8px 10px;margin-bottom:12px}
-#fallback {padding:14px 18px;background:white;border-top:1px solid #e2e8f0}
-#fallback li {margin:6px 0}
+button:focus-visible,[role="button"]:focus-visible,a:focus-visible {outline:3px solid #2563eb;outline-offset:3px}
+.tabs button[aria-selected="true"] {background:#e8f2ff;border-color:#548cd1;color:#13467a;font-weight:650}
+.layout {display:grid;grid-template-columns:minmax(0,1fr) 330px;
+  height:calc(100vh - 185px);min-height:460px}
+#main {min-width:0;min-height:0;overflow:auto;background:#f9fbfe;position:relative}
+#network {min-width:980px;width:100%;min-height:390px}
+#network svg {display:block;width:980px;max-width:none;height:auto}
+#list {padding:16px;max-width:780px}
+#list[hidden],#network[hidden] {display:none}
+.figure-item {display:block;width:100%;text-align:left;padding:12px 14px;
+  margin:0 0 8px;border:1px solid #d7e2ed;border-radius:10px;background:white}
+.figure-item strong {display:block;font-size:14px;line-height:1.5}
+.figure-item small {display:block;color:#64748b;margin-top:4px}
+#details {overflow:auto;padding:18px;border-left:1px solid #e2e8f0;background:#fff}
+#details h2 {font-size:18px;overflow-wrap:anywhere;margin:0 0 5px}
+#details h3 {font-size:12px;color:#64748b;text-transform:uppercase;
+  letter-spacing:.04em;margin:20px 0 9px}
+#details p {line-height:1.55;overflow-wrap:anywhere;margin:8px 0}
+#details img {display:block;width:100%;max-height:270px;object-fit:contain;
+  background:#f7fafc;border:1px solid #e2e8f0;border-radius:8px;margin:10px 0}
+#details a {color:#0758a6}
+#details .choice {margin:0 5px 6px 0;max-width:100%;text-align:left;overflow-wrap:anywhere}
+#details .evidence {background:#f3f8f4;padding:8px 10px;
+  border-left:3px solid #80ad94;font-size:12px;overflow-wrap:anywhere;margin:7px 0}
+#details .warning {font-size:12px;color:#475569;background:#f1f5f9;
+  border-radius:6px;padding:9px;margin:12px 0}
+.node {cursor:pointer;outline:none}
+.node rect {stroke-width:1.3}
+.node.concept rect {fill:#e5f6eb;stroke:#409a6e}
+.node.figure rect {fill:#e8f2fc;stroke:#438cc0}
+.node text {font:13px system-ui,-apple-system,sans-serif;fill:#1e3349;pointer-events:none}
+.node.active rect {stroke:#164a9a;stroke-width:3}
+.node.dim {opacity:.75}
+.node:focus rect {stroke:#1d4ed8;stroke-width:3}
+.edge {fill:none;stroke:#a0bbc7;stroke-width:1.6;opacity:.36;pointer-events:none}
+.edge.active {stroke:#21845e;stroke-width:2.6;opacity:.92}
+.edge.dim {opacity:.14}
+.column-label {font:600 13px system-ui,sans-serif;fill:#657991;letter-spacing:.06em}
+.footer {padding:10px 20px;color:#64748b;font-size:12px;
+  border-top:1px solid #e2e8f0;line-height:1.5;background:white}
+#fallback {padding:10px 20px;background:#fff}
 #fallback a {color:#0758a6}
-#empty {display:none;padding:26px;color:#475569}
-@media(max-width:700px) {
-  header {align-items:flex-start;flex-direction:column}
-  .layout {grid-template-columns:1fr;grid-template-rows:minmax(270px,1fr) 235px;
-    height:calc(100vh - 155px);min-height:550px}
-  #details {border-left:0;border-top:1px solid #e2e8f0}
+@media(max-width:760px) {
+  .layout {display:flex;flex-direction:column;height:auto;min-height:0}
+  #main {height:375px;flex:none}
+  #details {height:350px;border-left:0;border-top:1px solid #e2e8f0}
+  header h1 {font-size:17px}
 }
 </style>
-<script src="__IPCC_SCRIPT__"></script>
 </head>
 <body>
 <header>
-<div><h1>IPCC AR6 · __IPCC_TITLE__</h1>
-<div class="subtle" id="summary">Evidence-backed figure–concept relationships</div></div>
-<div class="toolbar"><button id="fit" type="button">Fit graph</button></div>
+<h1>__IPCC_TITLE__</h1>
+<div class="subtle" id="summary">IPCC AR6 · caption-based figure discovery</div>
 </header>
+<div class="toolbar">
+ <div class="tabs" role="tablist" aria-label="Explore results">
+  <button type="button" id="graph-tab" role="tab" aria-selected="true">Graph</button>
+  <button type="button" id="list-tab" role="tab" aria-selected="false">Figure list</button>
+ </div>
+ <span class="subtle">Select any figure or concept to inspect it.</span>
+</div>
 <div class="layout">
-  <div id="network" role="img" aria-label="Interactive IPCC figure knowledge graph"></div>
-  <aside id="details" aria-live="polite"><h2>Select a node</h2>
-    <p class="subtle">Choose a figure, concept, working group or topic.</p></aside>
+  <main id="main">
+    <div id="network" role="region" aria-label="Interactive figure and glossary concept graph"></div>
+    <div id="list" hidden></div>
+  </main>
+  <aside id="details" aria-live="polite"><h2>Figure explorer</h2></aside>
 </div>
-<div id="empty">No connected figures were found for this query.</div>
-<div class="legend">
- <span><i class="dot" style="background:#2c87bd"></i>Figure</span>
- <span><i class="dot" style="background:#2a936c"></i>Glossary concept</span>
- <span><i class="dot" style="background:#e3a83c"></i>Report section</span>
- <span><i class="dot" style="background:#8365ba"></i>Working group</span>
- <span><i class="dot" style="background:#b78b4a"></i>Curated topic</span>
- <span>Connections indicate caption mentions or report structure, not visual depiction or causality.</span>
-</div>
-<section id="fallback">
- <strong>Figure sources (available without interactive rendering)</strong>
- <ul>__IPCC_FALLBACK__</ul>
-</section>
+<div class="footer">Connections mean <b>the figure caption mentions a glossary concept</b> — not that the image visually depicts it or that the concepts are scientifically related.</div>
+<section id="fallback" hidden><strong>Original figure sources</strong><ul>__IPCC_FALLBACK__</ul></section>
 <script type="application/json" id="graph-data">__IPCC_DATA__</script>
 <script>
 (() => {
-  'use strict';
-  const data = JSON.parse(document.getElementById('graph-data').textContent);
-  const panel = document.getElementById('details');
-  const fallback = document.getElementById('fallback');
-  document.getElementById('summary').textContent =
-    `${data.shown_figures} of ${data.total_figures} matching figures · ${data.match} search`;
-
-  const el = (tag, text, cssClass) => {
-    const element = document.createElement(tag);
-    if (text !== undefined && text !== null) element.textContent = String(text);
-    if (cssClass) element.className = cssClass;
-    return element;
-  };
-  const add = (parent, tag, text, cssClass) => {
-    const child = el(tag, text, cssClass);
-    parent.appendChild(child);
-    return child;
-  };
-  const addLink = (parent, text, url) => {
-    if (!url) return;
-    const link = add(parent, 'a', text);
-    link.href = url;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-  };
-  const heading = (text) => add(panel, 'h3', text);
-
-  if (!data.nodes.length) {
-    document.getElementById('empty').style.display = 'block';
-    panel.replaceChildren(add(document.createDocumentFragment(), 'h2', 'No matching figures'));
-    return;
-  }
-  if (typeof vis === 'undefined') {
-    add(panel, 'div', 'Interactive network unavailable. Internet access is required for the visualization library; source links are listed below.', 'alert');
-    return;
-  }
-  fallback.hidden = true;
-  const network = new vis.Network(document.getElementById('network'), {
-    nodes: new vis.DataSet(data.nodes), edges: new vis.DataSet(data.edges.map(edge => ({
-      ...edge, arrows:{to:{enabled:true,scaleFactor:0.35}},
-      color: edge.relation === 'caption_mentions' ? '#9ac8b0' :
-        edge.relation === 'collection_member' ? '#dfc9a3' : '#ced8e3',
-      dashes: edge.relation === 'collection_member',
-      width: edge.relation === 'caption_mentions' ? 1.6 : 1,
-    }))),
-  }, {
-    autoResize: true,
-    interaction: {hover: true, tooltipDelay: 350, navigationButtons: true},
-    nodes: {font:{size:12,face:'system-ui',color:'#213047'},borderWidth:1,
-      margin:10,shadow:false},
-    groups: {
-      figure: {shape:'box',color:{background:'#e3f1fb',border:'#2c87bd'}},
-      concept: {shape:'ellipse',color:{background:'#d7f2e4',border:'#2a936c'},
-        font:{size:15,bold:{color:'#176c4b'}}},
-      section: {shape:'box',color:{background:'#fff2d5',border:'#e3a83c'},
-        font:{size:11}},
-      working_group: {shape:'ellipse',color:{background:'#eee5fc',border:'#8365ba'}},
-      report: {shape:'ellipse',color:{background:'#e8edf4',border:'#778ba5'}},
-      topic: {shape:'box',color:{background:'#f6ead8',border:'#b78b4a'},
-        font:{size:11}},
-    },
-    edges: {smooth:{type:'dynamic'},selectionWidth:2},
-    physics: {stabilization:{iterations:170},barnesHut:{gravitationalConstant:-6000,
-      centralGravity:0.16,springLength:135,springConstant:0.03,damping:0.17}},
-  });
-  network.once('stabilizationIterationsDone', () => {
-    network.setOptions({physics:false});
-    network.fit({animation:{duration:400}});
-  });
-  document.getElementById('fit').addEventListener('click', () =>
-    network.fit({animation:{duration:300}}));
-
-  function selectNode(id) {
-    if (!data.details[id]) return;
-    network.selectNodes([id]);
-    network.focus(id, {scale:1.05,animation:{duration:350}});
-    renderDetails(id);
-  }
-  function renderDetails(id) {
-    const item = data.details[id];
-    if (!item) return;
-    panel.replaceChildren();
-    add(panel,'h2',item.label);
-    add(panel,'p',item.kind.replaceAll('_',' '),'meta');
-    if (item.kind === 'figure') {
-      if (item.title && item.title !== item.label) add(panel,'p',item.title);
-      add(panel,'p',`${item.working_group} · ${item.section}`,'meta');
-      heading('IPCC figure');
-      if (item.images.length) {
-        const image = add(panel,'img');
-        image.alt = `Original IPCC figure reference: ${item.label}`;
-        image.loading = 'lazy';
-        image.referrerPolicy = 'no-referrer';
-        image.addEventListener('error', () => image.replaceWith(
-          el('p','Image preview unavailable; open the original IPCC source.','subtle')));
-        image.src = item.images[0];
-        if (item.images.length > 1) add(panel,'p',
-          `${item.images.length} published image references; showing the first.`,'meta');
-      } else add(panel,'p','No image reference was recorded for this figure.','subtle');
-      addLink(panel,'Open original IPCC figure ↗',item.source);
-      if (data.match === 'caption' && item.matched.length) {
-        heading('Literal caption matches');
-        for (const span of item.matched.slice(0,12)) {
-          add(panel,'div',`“${span.text}” · characters ${span.start}–${span.end}`,'evidence');
-        }
-        if (item.matched.length > 12) add(panel,'p',
-          `+${item.matched.length - 12} additional matches`,'subtle');
-        add(panel,'p','Literal matches are not scientific concept assertions.','subtle');
-      }
-      const conceptIds = Object.keys(item.evidence);
-      if (conceptIds.length) {
-        heading('Caption-supported concepts');
-        conceptIds.sort((a,b) => (data.details[a]?.label || a).localeCompare(
-          data.details[b]?.label || b));
-        for (const cid of conceptIds) {
-          const evidence = item.evidence[cid];
-          const link = add(panel,'button',data.details[cid]?.label || cid);
-          link.style.margin = '0 6px 4px 0';
-          link.addEventListener('click',()=>selectNode(cid));
-          for (const span of evidence.spans) add(panel,'div',
-            `“${span.text}” · characters ${span.start}–${span.end} · ${span.resolution}`,
-            'evidence');
-          if (evidence.count > evidence.spans.length) add(panel,'p',
-            `+${evidence.count - evidence.spans.length} further mentions`,'subtle');
-        }
-      }
-      if (!conceptIds.length && !item.matched.length)
-        add(panel,'p','No selected caption evidence in this subgraph.','subtle');
-    } else if (item.kind === 'concept') {
-      add(panel,'p',`${item.figures_in_view || 0} connected figures in this view`,'context');
-      add(panel,'p','These connections mean caption mentions, not verified visual depiction.','subtle');
-      addLink(panel,'Open glossary source ↗',item.source);
-      heading('Connected figures');
-      const neighbors = data.edges.filter(edge => edge.relation === 'caption_mentions'
-        && edge.to === id).map(edge => edge.from);
-      for (const neighbor of neighbors) {
-        const btn = add(panel,'button',data.details[neighbor]?.label || neighbor);
-        btn.style.display='block';btn.style.margin='0 0 6px';
-        btn.addEventListener('click',()=>selectNode(neighbor));
-      }
-    } else {
-      add(panel,'p','This is a published report-structure or curated navigation link, not an inferred scientific relationship.','subtle');
-    }
-  }
-  network.on('click', params => {
-    if (params.nodes.length) renderDetails(params.nodes[0]);
-  });
-  if (data.initial) selectNode(data.initial);
+ 'use strict';
+ const data=JSON.parse(document.getElementById('graph-data').textContent);
+ const network=document.getElementById('network');
+ const list=document.getElementById('list');
+ const panel=document.getElementById('details');
+ const graphTab=document.getElementById('graph-tab');
+ const listTab=document.getElementById('list-tab');
+ document.getElementById('summary').textContent =
+   `IPCC AR6 · ${data.shown_figures} of ${data.total_figures} matching figures · ${data.match} search`;
+ const S='http://www.w3.org/2000/svg';
+ const nodeById=new Map(data.nodes.map(n=>[n.id,n]));
+ const concepts=data.nodes.filter(n=>n.group==='concept');
+ const ranked=new Map((data.figure_order||[]).map((id,i)=>[id,i]));
+ const figures=data.nodes.filter(n=>n.group==='figure')
+   .sort((a,b)=>(ranked.get(a.id)??9999)-(ranked.get(b.id)??9999));
+ const edges=data.edges.filter(e=>e.relation==='caption_mentions'
+   && nodeById.has(e.from) && nodeById.has(e.to));
+ const neighbors=new Map();
+ for(const edge of edges){
+   if(!neighbors.has(edge.from)) neighbors.set(edge.from,new Set());
+   if(!neighbors.has(edge.to)) neighbors.set(edge.to,new Set());
+   neighbors.get(edge.from).add(edge.to);
+   neighbors.get(edge.to).add(edge.from);
+ }
+ let selected=null;
+ let graphSvg=null;
+ const elt=(tag,text,cls)=>{
+   const e=document.createElement(tag);
+   if(text!==undefined && text!==null) e.textContent=String(text);
+   if(cls)e.className=cls;
+   return e;
+ };
+ const put=(parent,tag,text,cls)=>{
+   const e=elt(tag,text,cls);parent.appendChild(e);return e;
+ };
+ const link=(parent,label,url)=>{
+   if(!url)return;
+   const a=put(parent,'a',label);a.href=url;a.target='_blank';
+   a.rel='noopener noreferrer';return a;
+ };
+ const svgElt=(tag,attrs)=>{
+   const e=document.createElementNS(S,tag);
+   for(const [k,v] of Object.entries(attrs||{})) e.setAttribute(k,String(v));
+   return e;
+ };
+ const short=(text,limit)=>{
+   text=String(text||'');
+   return text.length>limit?text.slice(0,limit-1).trimEnd()+'…':text;
+ };
+ function select(id){
+   if(!data.details[id])return;
+   selected=id;
+   for(const g of network.querySelectorAll('.node')){
+     const nid=g.getAttribute('data-id');
+     g.classList.toggle('active',nid===id);
+     g.classList.toggle('dim',nid!==id && !(neighbors.get(id)||new Set()).has(nid));
+   }
+   for(const line of network.querySelectorAll('.edge')){
+     const on=line.getAttribute('data-a')===id||line.getAttribute('data-b')===id;
+     line.classList.toggle('active',on);
+     line.classList.toggle('dim',!on);
+   }
+   renderDetails(id);
+ }
+ function graph(){
+   network.replaceChildren();
+   const h=Math.max(425,130+figures.length*56,130+concepts.length*76);
+   const svg=svgElt('svg',{viewBox:`0 0 980 ${h}`,width:980,height:h,
+     role:'group','aria-label':'Glossary concepts connected to IPCC figures by caption mentions'});
+   graphSvg=svg;
+   const title=svgElt('title'); title.textContent='Figure–concept evidence graph';svg.appendChild(title);
+   const labelA=svgElt('text',{x:65,y:32,class:'column-label'});
+   labelA.textContent='GLOSSARY CONCEPTS';svg.appendChild(labelA);
+   const labelB=svgElt('text',{x:575,y:32,class:'column-label'});
+   labelB.textContent='IPCC FIGURES';svg.appendChild(labelB);
+   const pos=new Map();
+   const place=(items,x,step)=>items.forEach((n,i)=>pos.set(n.id,{x,y:90+i*step}));
+   place(figures,745,56);
+   // Spread concepts across the figure column to reduce overlapping links.
+   concepts.forEach((n,i)=>pos.set(n.id,{x:195,y:concepts.length===1?h/2:90+i*(h-165)/(concepts.length-1)}));
+   for(const e of edges){
+     const a=pos.get(e.to),b=pos.get(e.from);if(!a||!b)continue;
+     const path=svgElt('path',{'data-a':e.from,'data-b':e.to,
+       class:'edge',d:`M330 ${a.y} C445 ${a.y} 460 ${b.y} 575 ${b.y}`});
+     svg.appendChild(path);
+   }
+   function draw(n,kind){
+     const p=pos.get(n.id);if(!p)return;
+     const isConcept=kind==='concept';
+     const w=isConcept?270:340;
+     const x=isConcept?60:575;
+     const g=svgElt('g',{class:`node ${kind}`,'data-id':n.id,role:'button',tabindex:0,
+       'aria-label':`${kind}: ${n.label}`});
+     const rect=svgElt('rect',{x,y:p.y-19,width:w,height:38,rx:9});g.appendChild(rect);
+     const text=svgElt('text',{x:x+13,y:p.y+4});
+     text.textContent=short(n.label,isConcept?32:43);g.appendChild(text);
+     g.addEventListener('click',()=>select(n.id));
+     g.addEventListener('keydown',event=>{
+       if(event.key==='Enter'||event.key===' '){event.preventDefault();select(n.id);}
+     });
+     svg.appendChild(g);
+   }
+   concepts.forEach(n=>draw(n,'concept'));
+   figures.forEach(n=>draw(n,'figure'));
+   if(!figures.length){
+     const t=svgElt('text',{x:575,y:105,fill:'#64748b'});
+     t.textContent='No matching figures in this view.';svg.appendChild(t);
+   }
+   if(!concepts.length){
+     const t=svgElt('text',{x:65,y:105,fill:'#64748b'});
+     t.textContent='No glossary links selected.';svg.appendChild(t);
+   }
+   network.appendChild(svg);
+ }
+ function renderList(){
+   list.replaceChildren();
+   if(!figures.length){put(list,'p','No matching figures.');return;}
+   for(const n of figures){
+     const d=data.details[n.id];
+     const btn=put(list,'button',null,'figure-item');
+     put(btn,'strong',d.label);
+     put(btn,'small',`${d.working_group} · ${d.section}`);
+     btn.addEventListener('click',()=>select(n.id));
+   }
+ }
+ function setTab(mode){
+   const isGraph=mode==='graph';
+   graphTab.setAttribute('aria-selected',String(isGraph));
+   listTab.setAttribute('aria-selected',String(!isGraph));
+   network.hidden=!isGraph;list.hidden=isGraph;
+ }
+ graphTab.addEventListener('click',()=>setTab('graph'));
+ listTab.addEventListener('click',()=>setTab('list'));
+ function detailButton(label,fn){
+   const b=put(panel,'button',label,'choice');b.addEventListener('click',fn);return b;
+ }
+ function renderDetails(id){
+   const d=data.details[id];if(!d)return;
+   panel.replaceChildren();
+   put(panel,'h2',d.label);
+   put(panel,'p',d.kind==='figure'?`${d.working_group} · ${d.section}`:'IPCC AR6 glossary concept','subtle');
+   if(d.kind==='figure'){
+     if(d.images&&d.images.length){
+       const img=put(panel,'img');img.alt=`IPCC figure: ${d.label}`;
+       img.loading='lazy';img.referrerPolicy='no-referrer';
+       img.addEventListener('error',()=>img.replaceWith(elt('p',
+         'Image preview unavailable. Open the original IPCC figure.','subtle')));
+       img.src=d.images[0];
+     }else put(panel,'p','No image URL recorded for this figure.','subtle');
+     link(panel,'Open original IPCC figure ↗',d.source);
+     if(d.title&&d.title!==d.label)put(panel,'p',d.title);
+     if(data.match==='caption'&&d.matched&&d.matched.length){
+       put(panel,'h3','Caption search matches');
+       for(const m of d.matched.slice(0,8))
+         put(panel,'div',`“${m.text}” · ${m.start}–${m.end}`,'evidence');
+     }
+     const pairs=Object.entries(d.evidence||{}).sort((a,b)=>
+       (data.details[a[0]]?.label||'').localeCompare(data.details[b[0]]?.label||''));
+     if(pairs.length){
+       put(panel,'h3','Found in caption');
+       for(const [cid,evidence] of pairs){
+         detailButton(data.details[cid]?.label||cid,()=>select(cid));
+         for(const span of evidence.spans.slice(0,4))
+           put(panel,'div',`“${span.text}” · characters ${span.start}–${span.end}`,'evidence');
+         if(evidence.count>4)put(panel,'p',`+${evidence.count-4} further mentions`,'subtle');
+       }
+     }else if(data.match!=='caption')put(panel,'p','No selected glossary matches.','subtle');
+   }else if(d.kind==='concept'){
+     const linked=figures.filter(n=>(neighbors.get(id)||new Set()).has(n.id));
+     put(panel,'p',`${linked.length} figure${linked.length===1?'':'s'} linked in this view.`);
+     link(panel,'Open glossary source ↗',d.source);
+     put(panel,'h3','Figures mentioning this concept');
+     for(const n of linked)detailButton(data.details[n.id].label,()=>select(n.id));
+     if(!linked.length)put(panel,'p','No caption matches in this view.','subtle');
+   }
+ }
+ graph();renderList();
+ setTab('graph');
+ if(data.initial&&data.details[data.initial])select(data.initial);
+ else if(figures.length)select(figures[0].id);
+ else if(concepts.length)select(concepts[0].id);
+ else put(panel,'p','No matching figures for this search.','subtle');
 })();
 </script>
 </body>
 </html>'''
 
-
 def render_html(view: KnowledgeSubgraph) -> str:
     """Create a portable browser document for this RDF subgraph.
 
-    The visualization JavaScript and remote IPCC image previews require an
-    internet connection. The HTML embeds no image binaries or full captions.
+    The visualization works offline. Remote IPCC image previews require
+    internet access. The HTML embeds no image binaries or full captions.
     """
     payload = _visualization_data(view)
     # Never allow source labels or caption snippets to end an inline JSON script.
@@ -486,12 +529,11 @@ def render_html(view: KnowledgeSubgraph) -> str:
     # Substitute in one pass: source text must never be interpreted as a token.
     replacements = {
         "__IPCC_TITLE__": escape(view.query),
-        "__IPCC_SCRIPT__": escape(_NETWORK_SCRIPT, quote=True),
         "__IPCC_FALLBACK__": "".join(items),
         "__IPCC_DATA__": serialized,
     }
     return re.sub(
-        r"__IPCC_(?:TITLE|SCRIPT|FALLBACK|DATA)__",
+        r"__IPCC_(?:TITLE|FALLBACK|DATA)__",
         lambda match: replacements[match.group()], _HTML_DOCUMENT,
     )
 
