@@ -1,1 +1,37 @@
+# Python environments
+.venv/
 venv/
+env/
+
+# Python bytecode and tooling
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Local secrets and editor/OS files
+.env
+.env.*
+!.env.example
+.DS_Store
+.idea/
+.vscode/
+
+# Temporary SQLite and pipeline files
+*.db-journal
+*.db-wal
+*.db-shm
+*.tmp
+
+# Human-review samples include source caption text; keep them local
+reports/concept_review_sample.json
+reports/review_small.json
