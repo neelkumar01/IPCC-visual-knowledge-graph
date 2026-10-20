@@ -1,0 +1,758 @@
+@prefix dcmitype: <http://purl.org/dc/dcmitype/> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix ipcc: <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/ontology#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix taxonomy: <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/taxonomy/category/> .
+
+taxonomy:adaptation-and-resilience a skos:Collection ;
+    rdfs:label "Adaptation and resilience"@en ;
+    dcterms:description "Responses to climate impacts, adaptive capacity and risk reduction."@en ;
+    dcterms:isPartOf <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/taxonomy> ;
+    dcterms:references <https://www.ipcc.ch/report/ar6/wg2/> ;
+    skos:member <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-020225790276dd5d>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-02d7a37cc8aff7aa>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-13b330e1d227ac7a>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-14035a5992b3b8af>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-228ed4dd0ad250a8>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-2fe1d615f7fb24b9>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-38f54d523d3dc1d1>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-5f4260133f02ce57>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-650e73e9de301800>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-7b19e541dda78c1c>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-b8cbc700577c96ee>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-cc9c8c2b5ebd8a5e>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-d9f6a18e8ca513d9>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-ecb728403f399a6c>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-fb26d1a9b99bedf5> .
+
+taxonomy:climate-changes a skos:Collection ;
+    rdfs:label "Climate change and extremes"@en ;
+    dcterms:description "Changes in climate conditions, physical hazards and extreme events."@en ;
+    dcterms:isPartOf <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/taxonomy> ;
+    dcterms:references <https://www.ipcc.ch/report/ar6/wg1/>,
+        <https://www.ipcc.ch/report/ar6/wg2/> ;
+    skos:member <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-41a40ce559efc5c2>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-4993ef734f8e3ac4>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-5f460d199046a8bb>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-9bb14e1f930170c2>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-a7c8f14280cf3db4>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-caaed8c4eb8dfedd>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-d8864644c15d33be>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-f28d567cf5453b5c>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-f63a711e6f902abd> .
+
+taxonomy:climate-system a skos:Collection ;
+    rdfs:label "Climate system and processes"@en ;
+    dcterms:description "Physical components, processes, state variables and responses of the climate system."@en ;
+    dcterms:isPartOf <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/taxonomy> ;
+    dcterms:references <https://www.ipcc.ch/report/ar6/wg1/> ;
+    skos:member <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-0150de8c71bac16e>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-10db699812d02cc5>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-1b1845dc3b372223>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-1c3ef4d5b66a2242>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-2346c53ccc9fce38>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-275cea7cb9aceee3>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-2ee1ab95b9643d85>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-2f2db49b96cdbb26>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-47afad612b1f9cc8>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-4d89116a6ba385cc>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-6ab6f86a0f2d1dc2>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-6f14f78da123606c>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-7940238e2c424ae3>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-7aa374039f3a779e>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-7b84cc4655a06af2>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-9149a4a2c2c78eac>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-a772651131ccaddf>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-b29d8ef58b585aa6>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-bfd5a8ed7357ec4d>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-c0f9c7646ec362d5>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-e4d00a61cf3dcbc7> .
+
+taxonomy:drivers-and-forcing a skos:Collection ;
+    rdfs:label "Climate drivers and radiative forcing"@en ;
+    dcterms:description "Forcing agents, greenhouse gases, and processes that alter the energy balance."@en ;
+    dcterms:isPartOf <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/taxonomy> ;
+    dcterms:references <https://www.ipcc.ch/report/ar6/wg1/>,
+        <https://www.ipcc.ch/report/ar6/wg3/> ;
+    skos:member <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-06af04a7aa5cd491>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-16fdadc245fe18fb>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-2c4e580c1d49b958>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-2d5f5a8dc4bbee0a>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-476d5e5bdbffa0b6>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-76b28877d3c64a3a>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-831dde9d3910305d>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-8d3ea7064bca7867>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-a7ff83ee80b8ea3c>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-be544a5fd26e72a1>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-ca596b017c8fbf1d>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-ddf74783a6568c47> .
+
+taxonomy:impacts-and-risk a skos:Collection ;
+    rdfs:label "Climate impacts and risk"@en ;
+    dcterms:description "Consequences, hazards, exposure, vulnerabilities and systems at risk."@en ;
+    dcterms:isPartOf <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/taxonomy> ;
+    dcterms:references <https://www.ipcc.ch/report/ar6/wg2/> ;
+    skos:member <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-199416cb4d64de60>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-2c6ef0f0d0e4cc6e>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-32ceacc06e8970a0>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-39c65f132b0aec8e>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-62484e22a6a5ade1>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-652607e181622fd2>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-8742935ee8fbb1ad>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-ac7dadfcc4359f62>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-b40356e6d1c6948b>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-cabdb424db58baf4>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-cfcf0702710dc21d>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-ebf7d33960b69c4c> .
+
+taxonomy:methods-and-evidence a skos:Collection ;
+    rdfs:label "Models, methods and evidence"@en ;
+    dcterms:description "Scientific models, scenarios, assessment methods and uncertainty terminology."@en ;
+    dcterms:isPartOf <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/taxonomy> ;
+    dcterms:references <https://www.ipcc.ch/report/ar6/wg1/>,
+        <https://www.ipcc.ch/report/ar6/wg2/>,
+        <https://www.ipcc.ch/report/ar6/wg3/> ;
+    skos:member <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-2a390f80dc5031a7>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-3102cc0c3c59b3e8>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-3669c144ee0f4bf6>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-3ec5d43e8fb5c7a4>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-3ee591fcb25f09a0>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-6e86d20120344270>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-8edcc26c0f6c7256>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-9019f8058b99ac31>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-901bf84e75c67b2b>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-98200917362cfd4f>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-ae36cc6c34d43bc0>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-cb9db1e2b6e34d28>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-cc28707b8470754d>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-dad9a79bf7094d4e>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-e4cfd8ec8f32c350>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-ee26f4137f88e240>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-f3157b203a39e13c>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-f7b4a17554a1dd74>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-f7d11e18f3d131a5>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-ff0139d07c592e9a> .
+
+taxonomy:mitigation-and-emissions a skos:Collection ;
+    rdfs:label "Mitigation and emissions"@en ;
+    dcterms:description "Emission-reduction pathways, energy options and carbon removal approaches."@en ;
+    dcterms:isPartOf <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/taxonomy> ;
+    dcterms:references <https://www.ipcc.ch/report/ar6/wg3/> ;
+    skos:member <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-0ac2821928fb12a2>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-122897e12ea68602>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-139fe9c32b39ce81>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-1b9e9c8d0e10a0e1>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-37dc287ddc14ec46>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-380a26fdace62c4e>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-52a6efefa2bf8bb9>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-5fcfcec15c224919>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-608f3626925f3f2b>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-6750cb68b37eb331>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-7b23bd475a0c0dd0>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-97c8b93e42418dae>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-98acd62899ed3c05>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-9fd06618dcacf3b9>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-bb38799567320cad>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-def70d6d6ca1550b> .
+
+taxonomy:policy-and-development a skos:Collection ;
+    rdfs:label "Policy, governance and development"@en ;
+    dcterms:description "Climate governance, justice, finance and sustainable-development topics."@en ;
+    dcterms:isPartOf <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/taxonomy> ;
+    dcterms:references <https://www.ipcc.ch/report/ar6/wg2/>,
+        <https://www.ipcc.ch/report/ar6/wg3/> ;
+    skos:member <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-0498c2ad88c7acf6>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-2a8140554c066f39>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-2ec5fbea05134a8a>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-30703a5c0fcb28e8>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-5b9a1bc2f2dcffa5>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-85574658768177d9>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-a426201ed49e2b55>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-b0de149ebdb4eea7>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-bf9422a2a04aad21>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-ecb728403f399a6c>,
+        <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-fa91636fe37aaec3> .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-0150de8c71bac16e> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-0150de8c71bac16e" ;
+    skos:prefLabel "Water cycle"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-020225790276dd5d> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-020225790276dd5d" ;
+    skos:prefLabel "Disaster risk reduction"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-02d7a37cc8aff7aa> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-02d7a37cc8aff7aa" ;
+    skos:prefLabel "Transformational adaptation"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-0498c2ad88c7acf6> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-0498c2ad88c7acf6" ;
+    skos:prefLabel "Climate governance"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-06af04a7aa5cd491> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-06af04a7aa5cd491" ;
+    skos:prefLabel "Solar activity"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-0ac2821928fb12a2> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-0ac2821928fb12a2" ;
+    skos:prefLabel "Agriculture, Forestry and Other Land Use"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-10db699812d02cc5> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-10db699812d02cc5" ;
+    skos:prefLabel "Climate"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-122897e12ea68602> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-122897e12ea68602" ;
+    skos:prefLabel "Energy system"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-139fe9c32b39ce81> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-139fe9c32b39ce81" ;
+    skos:prefLabel "Bioenergy"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-13b330e1d227ac7a> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-13b330e1d227ac7a" ;
+    skos:prefLabel "Ecosystem-based adaptation"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-14035a5992b3b8af> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-14035a5992b3b8af" ;
+    skos:prefLabel "Adaptive capacity"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-16fdadc245fe18fb> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-16fdadc245fe18fb" ;
+    skos:prefLabel "Greenhouse gases"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-199416cb4d64de60> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-199416cb4d64de60" ;
+    skos:prefLabel "Ecosystem services"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-1b1845dc3b372223> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-1b1845dc3b372223" ;
+    skos:prefLabel "Climate feedback"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-1b9e9c8d0e10a0e1> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-1b9e9c8d0e10a0e1" ;
+    skos:prefLabel "Net zero CO2 emissions"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-1c3ef4d5b66a2242> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-1c3ef4d5b66a2242" ;
+    skos:prefLabel "Sea surface temperature"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-228ed4dd0ad250a8> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-228ed4dd0ad250a8" ;
+    skos:prefLabel "Climate resilient development pathways"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-2346c53ccc9fce38> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-2346c53ccc9fce38" ;
+    skos:prefLabel "Carbon cycle"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-275cea7cb9aceee3> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-275cea7cb9aceee3" ;
+    skos:prefLabel "Climate variability"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-2a390f80dc5031a7> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-2a390f80dc5031a7" ;
+    skos:prefLabel "Emulators"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-2a8140554c066f39> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-2a8140554c066f39" ;
+    skos:prefLabel "Sustainable development"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-2c4e580c1d49b958> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-2c4e580c1d49b958" ;
+    skos:prefLabel "Greenhouse effect"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-2c6ef0f0d0e4cc6e> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-2c6ef0f0d0e4cc6e" ;
+    skos:prefLabel "Risk"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-2d5f5a8dc4bbee0a> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-2d5f5a8dc4bbee0a" ;
+    skos:prefLabel "Methane"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-2ec5fbea05134a8a> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-2ec5fbea05134a8a" ;
+    skos:prefLabel "Sustainable development pathways"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-2ee1ab95b9643d85> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-2ee1ab95b9643d85" ;
+    skos:prefLabel "Permafrost"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-2f2db49b96cdbb26> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-2f2db49b96cdbb26" ;
+    skos:prefLabel "Climate system"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-2fe1d615f7fb24b9> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-2fe1d615f7fb24b9" ;
+    skos:prefLabel "Adaptation"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-30703a5c0fcb28e8> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-30703a5c0fcb28e8" ;
+    skos:prefLabel "Equity"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-3102cc0c3c59b3e8> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-3102cc0c3c59b3e8" ;
+    skos:prefLabel "Paleoclimate"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-32ceacc06e8970a0> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-32ceacc06e8970a0" ;
+    skos:prefLabel "Vulnerability"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-3669c144ee0f4bf6> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-3669c144ee0f4bf6" ;
+    skos:prefLabel "Climate projection"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-37dc287ddc14ec46> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-37dc287ddc14ec46" ;
+    skos:prefLabel "Decarbonisation"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-380a26fdace62c4e> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-380a26fdace62c4e" ;
+    skos:prefLabel "Mitigation pathways"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-38f54d523d3dc1d1> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-38f54d523d3dc1d1" ;
+    skos:prefLabel "Climate resilient development"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-39c65f132b0aec8e> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-39c65f132b0aec8e" ;
+    skos:prefLabel "Biodiversity"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-3ec5d43e8fb5c7a4> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-3ec5d43e8fb5c7a4" ;
+    skos:prefLabel "Lifecycle assessment"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-3ee591fcb25f09a0> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-3ee591fcb25f09a0" ;
+    skos:prefLabel "Attribution"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-41a40ce559efc5c2> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-41a40ce559efc5c2" ;
+    skos:prefLabel "Global warming"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-476d5e5bdbffa0b6> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-476d5e5bdbffa0b6" ;
+    skos:prefLabel "Land-use change"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-47afad612b1f9cc8> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-47afad612b1f9cc8" ;
+    skos:prefLabel "Ocean"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-4993ef734f8e3ac4> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-4993ef734f8e3ac4" ;
+    skos:prefLabel "Extreme weather event"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-4d89116a6ba385cc> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-4d89116a6ba385cc" ;
+    skos:prefLabel "Cryosphere"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-52a6efefa2bf8bb9> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-52a6efefa2bf8bb9" ;
+    skos:prefLabel "Mitigation"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-5b9a1bc2f2dcffa5> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-5b9a1bc2f2dcffa5" ;
+    skos:prefLabel "Sustainable Development Goals"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-5f4260133f02ce57> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-5f4260133f02ce57" ;
+    skos:prefLabel "Disaster risk management"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-5f460d199046a8bb> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-5f460d199046a8bb" ;
+    skos:prefLabel "Sea level rise"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-5fcfcec15c224919> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-5fcfcec15c224919" ;
+    skos:prefLabel "Carbon dioxide removal"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-608f3626925f3f2b> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-608f3626925f3f2b" ;
+    skos:prefLabel "Bioenergy with carbon dioxide capture and storage"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-62484e22a6a5ade1> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-62484e22a6a5ade1" ;
+    skos:prefLabel "Health"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-650e73e9de301800> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-650e73e9de301800" ;
+    skos:prefLabel "Nature-based solutions"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-652607e181622fd2> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-652607e181622fd2" ;
+    skos:prefLabel "Hazard"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-6750cb68b37eb331> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-6750cb68b37eb331" ;
+    skos:prefLabel "Renewable energy"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-6ab6f86a0f2d1dc2> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-6ab6f86a0f2d1dc2" ;
+    skos:prefLabel "Sea ice"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-6e86d20120344270> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-6e86d20120344270" ;
+    skos:prefLabel "Global warming potential"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-6f14f78da123606c> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-6f14f78da123606c" ;
+    skos:prefLabel "Snow cover"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-76b28877d3c64a3a> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-76b28877d3c64a3a" ;
+    skos:prefLabel "Fossil fuels"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-7940238e2c424ae3> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-7940238e2c424ae3" ;
+    skos:prefLabel "Biosphere"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-7aa374039f3a779e> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-7aa374039f3a779e" ;
+    skos:prefLabel "Transient climate response"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-7b19e541dda78c1c> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-7b19e541dda78c1c" ;
+    skos:prefLabel "Early warning systems"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-7b23bd475a0c0dd0> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-7b23bd475a0c0dd0" ;
+    skos:prefLabel "Net zero greenhouse gas emissions"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-7b84cc4655a06af2> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-7b84cc4655a06af2" ;
+    skos:prefLabel "Albedo"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-831dde9d3910305d> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-831dde9d3910305d" ;
+    skos:prefLabel "Black carbon"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-85574658768177d9> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-85574658768177d9" ;
+    skos:prefLabel "Climate finance"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-8742935ee8fbb1ad> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-8742935ee8fbb1ad" ;
+    skos:prefLabel "Food security"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-8d3ea7064bca7867> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-8d3ea7064bca7867" ;
+    skos:prefLabel "Nitrous oxide"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-8edcc26c0f6c7256> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-8edcc26c0f6c7256" ;
+    skos:prefLabel "Models"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-9019f8058b99ac31> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-9019f8058b99ac31" ;
+    skos:prefLabel "Uncertainty"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-901bf84e75c67b2b> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-901bf84e75c67b2b" ;
+    skos:prefLabel "Ensemble"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-9149a4a2c2c78eac> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-9149a4a2c2c78eac" ;
+    skos:prefLabel "Glacier"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-97c8b93e42418dae> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-97c8b93e42418dae" ;
+    skos:prefLabel "Carbon dioxide capture and storage"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-98200917362cfd4f> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-98200917362cfd4f" ;
+    skos:prefLabel "General circulation model"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-98acd62899ed3c05> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-98acd62899ed3c05" ;
+    skos:prefLabel "Energy efficiency"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-9bb14e1f930170c2> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-9bb14e1f930170c2" ;
+    skos:prefLabel "Ocean acidification"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-9fd06618dcacf3b9> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-9fd06618dcacf3b9" ;
+    skos:prefLabel "Emission pathways"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-a426201ed49e2b55> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-a426201ed49e2b55" ;
+    skos:prefLabel "Climate justice"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-a772651131ccaddf> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-a772651131ccaddf" ;
+    skos:prefLabel "Equilibrium climate sensitivity"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-a7c8f14280cf3db4> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-a7c8f14280cf3db4" ;
+    skos:prefLabel "Climate extreme"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-a7ff83ee80b8ea3c> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-a7ff83ee80b8ea3c" ;
+    skos:prefLabel "External forcing"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-ac7dadfcc4359f62> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-ac7dadfcc4359f62" ;
+    skos:prefLabel "Disaster risk"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-ae36cc6c34d43bc0> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-ae36cc6c34d43bc0" ;
+    skos:prefLabel "Climate model"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-b0de149ebdb4eea7> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-b0de149ebdb4eea7" ;
+    skos:prefLabel "Development pathways"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-b29d8ef58b585aa6> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-b29d8ef58b585aa6" ;
+    skos:prefLabel "Hydrological cycle"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-b40356e6d1c6948b> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-b40356e6d1c6948b" ;
+    skos:prefLabel "Exposure"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-b8cbc700577c96ee> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-b8cbc700577c96ee" ;
+    skos:prefLabel "Resilience"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-bb38799567320cad> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-bb38799567320cad" ;
+    skos:prefLabel "Direct air capture"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-be544a5fd26e72a1> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-be544a5fd26e72a1" ;
+    skos:prefLabel "Radiative forcing"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-bf9422a2a04aad21> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-bf9422a2a04aad21" ;
+    skos:prefLabel "Governance"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-bfd5a8ed7357ec4d> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-bfd5a8ed7357ec4d" ;
+    skos:prefLabel "Atmosphere"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-c0f9c7646ec362d5> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-c0f9c7646ec362d5" ;
+    skos:prefLabel "Climate sensitivity"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-ca596b017c8fbf1d> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-ca596b017c8fbf1d" ;
+    skos:prefLabel "Aerosol"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-caaed8c4eb8dfedd> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-caaed8c4eb8dfedd" ;
+    skos:prefLabel "Drought"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-cabdb424db58baf4> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-cabdb424db58baf4" ;
+    skos:prefLabel "Impacts"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-cb9db1e2b6e34d28> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-cb9db1e2b6e34d28" ;
+    skos:prefLabel "Integrated assessment model"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-cc28707b8470754d> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-cc28707b8470754d" ;
+    skos:prefLabel "Regional climate model"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-cc9c8c2b5ebd8a5e> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-cc9c8c2b5ebd8a5e" ;
+    skos:prefLabel "Climate services"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-cfcf0702710dc21d> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-cfcf0702710dc21d" ;
+    skos:prefLabel "Heat stress"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-d8864644c15d33be> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-d8864644c15d33be" ;
+    skos:prefLabel "Flood"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-d9f6a18e8ca513d9> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-d9f6a18e8ca513d9" ;
+    skos:prefLabel "Adaptation options"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-dad9a79bf7094d4e> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-dad9a79bf7094d4e" ;
+    skos:prefLabel "Detection"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-ddf74783a6568c47> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-ddf74783a6568c47" ;
+    skos:prefLabel "Carbon dioxide"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-def70d6d6ca1550b> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-def70d6d6ca1550b" ;
+    skos:prefLabel "Remaining carbon budget"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-e4cfd8ec8f32c350> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-e4cfd8ec8f32c350" ;
+    skos:prefLabel "Representative Concentration Pathways"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-e4d00a61cf3dcbc7> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-e4d00a61cf3dcbc7" ;
+    skos:prefLabel "Atlantic Meridional Overturning Circulation"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-ebf7d33960b69c4c> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-ebf7d33960b69c4c" ;
+    skos:prefLabel "Water security"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-ee26f4137f88e240> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-ee26f4137f88e240" ;
+    skos:prefLabel "Scenario"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-f28d567cf5453b5c> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-f28d567cf5453b5c" ;
+    skos:prefLabel "Climate change"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-f3157b203a39e13c> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-f3157b203a39e13c" ;
+    skos:prefLabel "Earth system model"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-f63a711e6f902abd> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-f63a711e6f902abd" ;
+    skos:prefLabel "Heatwave"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-f7b4a17554a1dd74> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-f7b4a17554a1dd74" ;
+    skos:prefLabel "Detection and attribution"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-f7d11e18f3d131a5> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-f7d11e18f3d131a5" ;
+    skos:prefLabel "Likelihood"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-fa91636fe37aaec3> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-fa91636fe37aaec3" ;
+    skos:prefLabel "Conference of the Parties"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-fb26d1a9b99bedf5> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-fb26d1a9b99bedf5" ;
+    skos:prefLabel "Adaptation limits"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-ff0139d07c592e9a> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-ff0139d07c592e9a" ;
+    skos:prefLabel "Confidence"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/resource/concept/ipcc-ar6-ecb728403f399a6c> a skos:Concept,
+        ipcc:ScientificConcept ;
+    dcterms:identifier "ipcc-ar6-ecb728403f399a6c" ;
+    skos:prefLabel "Capacity building"@en .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/taxonomy> a dcmitype:Collection ;
+    dcterms:description "Project-curated, non-exhaustive navigation facets for selected IPCC-glossary-derived concepts; NOT an official IPCC taxonomy, verified concept hierarchy or classification of figures."@en ;
+    dcterms:relation <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/ontology> ;
+    dcterms:title "IPCC AR6 figure graph: curated topic collections"@en ;
+    owl:versionInfo "1.0.0" .
+

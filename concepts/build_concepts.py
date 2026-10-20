@@ -30,6 +30,7 @@ from typing import Any
 
 from concepts.extract import ConceptExtractor
 from concepts.normalize import ConceptNormalizer
+from concepts.quality import MentionQuality
 from concepts.vocabulary import Vocabulary, load_vocabulary
 
 
@@ -39,8 +40,8 @@ DEFAULT_VOCABULARY = PROJECT_ROOT / "data" / "processed" / "ipcc_ar6_vocabulary.
 DEFAULT_DATABASE = PROJECT_ROOT / "data" / "processed" / "concepts.db"
 DEFAULT_REPORT = PROJECT_ROOT / "reports" / "concept_quality.json"
 WORKING_GROUPS = ("WG1", "WG2", "WG3")
-DATABASE_SCHEMA_VERSION = 1
-METHOD = "glossary_lexical_v1"
+DATABASE_SCHEMA_VERSION = 2
+METHOD = "glossary_lexical_quality_v2"
 
 
 @dataclass(frozen=True, slots=True)
@@ -88,10 +89,11 @@ CREATE TABLE mentions (
     matched_text TEXT NOT NULL,
     normalized_text TEXT NOT NULL,
     match_kind TEXT NOT NULL CHECK(match_kind IN ('label','alias','mixed')),
-    resolution TEXT NOT NULL CHECK(resolution IN ('lexical','explicit_expansion','ambiguous')),
+    resolution TEXT NOT NULL CHECK(resolution IN ('lexical','explicit_expansion','ambiguous','chemical_formula','excluded')),
+    quality_rule TEXT CHECK(quality_rule IN ('co2_formula','co2_equivalent_qualifier','citation_source_label')),
     term_id TEXT REFERENCES concepts(term_id),
-    CHECK ((resolution = 'ambiguous' AND term_id IS NULL) OR
-           (resolution != 'ambiguous' AND term_id IS NOT NULL)),
+    CHECK ((resolution IN ('ambiguous','excluded') AND term_id IS NULL) OR
+           (resolution NOT IN ('ambiguous','excluded') AND term_id IS NOT NULL)),
     UNIQUE (figure_id, start_offset, end_offset)
 );
 CREATE TABLE mention_candidates (
@@ -195,6 +197,8 @@ def _populate_database(
     """Create every source-backed concept, mention, and candidate association."""
     extractor = ConceptExtractor(vocabulary)
     normalizer = ConceptNormalizer(vocabulary)
+    quality = MentionQuality(vocabulary)
+    rule_counts: Counter[str] = Counter()
     summary: Counter[str] = Counter()
     by_wg: dict[str, Counter[str]] = {wg: Counter() for wg in WORKING_GROUPS}
     wg_concepts: dict[str, set[str]] = {wg: set() for wg in WORKING_GROUPS}
@@ -248,8 +252,10 @@ def _populate_database(
                     (figure.figure_id, wg, figure.source_url, figure.caption_status, caption_hash),
                 )
 
-                mentions = normalizer.normalize(
-                    extractor.extract(figure.figure_id, figure.caption), figure.caption
+                mentions = quality.assess(
+                    normalizer.normalize(
+                        extractor.extract(figure.figure_id, figure.caption), figure.caption
+                    ), figure.caption
                 )
                 if mentions:
                     summary["figures_with_mentions"] += 1
@@ -259,26 +265,34 @@ def _populate_database(
                     by_wg[wg]["captioned_figures_without_matches"] += 1
 
                 figure_resolved: set[str] = set()
-                for mention in mentions:
+                for assessed in mentions:
+                    mention = assessed.original
+                    if assessed.rule is not None:
+                        rule_counts[assessed.rule] += 1
                     summary["total_mentions"] += 1
                     by_wg[wg]["total_mentions"] += 1
-                    if mention.term_id is None:
+                    if assessed.is_excluded:
+                        summary["excluded_mentions"] += 1
+                        by_wg[wg]["excluded_mentions"] += 1
+                    elif assessed.is_ambiguous:
                         summary["ambiguous_mentions"] += 1
                         by_wg[wg]["ambiguous_mentions"] += 1
                         ambiguity[mention.normalized_text] += 1
                     else:
                         summary["resolved_mentions"] += 1
                         by_wg[wg]["resolved_mentions"] += 1
-                        figure_resolved.add(mention.term_id)
-                        if mention.resolution == "explicit_expansion":
+                        figure_resolved.add(assessed.term_id)
+                        if assessed.resolution == "chemical_formula":
+                            summary["formula_resolved_mentions"] += 1
+                        if assessed.resolution == "explicit_expansion":
                             summary["explicit_expansion_mentions"] += 1
                     row = db.execute(
                         "INSERT INTO mentions(figure_id,start_offset,end_offset,"
-                        "matched_text,normalized_text,match_kind,resolution,term_id) "
-                        "VALUES (?,?,?,?,?,?,?,?)",
+                        "matched_text,normalized_text,match_kind,resolution,quality_rule,term_id) "
+                        "VALUES (?,?,?,?,?,?,?,?,?)",
                         (mention.figure_id, mention.start, mention.end,
                          mention.matched_text, mention.normalized_text,
-                         mention.match_kind, mention.resolution, mention.term_id),
+                         mention.match_kind, assessed.resolution, assessed.rule, assessed.term_id),
                     )
                     db.executemany(
                         "INSERT INTO mention_candidates(mention_id,term_id) VALUES (?,?)",
@@ -312,14 +326,14 @@ def _populate_database(
     counts = (
         "total_figures", "available_captions", "missing_captions", "figures_with_mentions",
         "captioned_figures_without_matches", "figures_with_resolved_concepts",
-        "total_mentions", "resolved_mentions", "ambiguous_mentions",
-        "explicit_expansion_mentions", "figure_concept_links", "vocabulary_terms",
+        "total_mentions", "resolved_mentions", "ambiguous_mentions", "excluded_mentions",
+        "formula_resolved_mentions", "explicit_expansion_mentions", "figure_concept_links", "vocabulary_terms",
         "distinct_resolved_concepts",
     )
     wg_counts = (
         "total_figures", "available_captions", "missing_captions", "figures_with_mentions",
         "captioned_figures_without_matches", "figures_with_resolved_concepts",
-        "total_mentions", "resolved_mentions", "ambiguous_mentions",
+        "total_mentions", "resolved_mentions", "ambiguous_mentions", "excluded_mentions",
     )
     return {
         "summary": {key: summary[key] for key in counts},
@@ -329,6 +343,7 @@ def _populate_database(
             for wg in WORKING_GROUPS
         },
         "ambiguous_spellings_observed": dict(sorted(ambiguity.items())),
+        "quality_rules_applied": dict(sorted(rule_counts.items())),
         "top_concepts_by_figures": [
             {"term_id": term_id, "label": vocabulary.get(term_id).label, "figures": count}
             for term_id, count in sorted(
@@ -393,7 +408,10 @@ def build_concepts(
                 **counts,
                 "notes": [
                     "Matches are literal glossary terms/aliases in captions, not verified visual content.",
-                    "An ambiguous mention has no selected concept and cannot create a figure_concepts link.",
+                    "Ambiguous or excluded mentions have no selected concept and cannot create a figure_concepts link.",
+                    "All original mention spans and candidates are retained for audit, including excluded citations.",
+                    "CO2 formula disambiguation follows explicit IPCC notation; it is a heuristic requiring manual evaluation.",
+                    "No precision or recall metric is claimed without an independently annotated gold sample.",
                     "Caption-missing figures are retained; their mentions are empty.",
                     "A figure-concept link records a caption mention, not a causal or ontology relation.",
                     "Concept extraction is vocabulary-limited; absence of a match is not absence of a topic.",

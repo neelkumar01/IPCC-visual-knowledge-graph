@@ -1,0 +1,62 @@
+{
+  "report_type": "ontology_build_quality",
+  "build_version": "1.0",
+  "generated_at": "2026-10-20T13:32:08+00:00",
+  "inputs": {
+    "corpus_sha256": "2be04603057d3a2e0c8f330cb686d252f0628da3ab06ce55e9ae6ab7fcfaf3c2",
+    "concepts_sha256": "c51a3775f86dd70afca5ee064125152496533a5b489eb81b786b1ec3c50bcbfc",
+    "vocabulary_sha256": "080961c6d64d4dbc6ce404be98ee221a85740995a2a384de008b7c28ea926ef2",
+    "corpus_path": "/Users/neelkumar/Documents/open-source/IPCC-visual-knowledge-graph/data/processed/corpus.db",
+    "concepts_path": "/Users/neelkumar/Documents/open-source/IPCC-visual-knowledge-graph/data/processed/concepts.db",
+    "vocabulary_path": "/Users/neelkumar/Documents/open-source/IPCC-visual-knowledge-graph/data/processed/ipcc_ar6_vocabulary.json"
+  },
+  "summary": {
+    "figures": 1310,
+    "figures_with_captions": 1297,
+    "concepts": 920,
+    "image_references": 1355,
+    "resolved_mentions": 10259,
+    "total_mentions": 10398,
+    "unresolved_mentions": 139,
+    "excluded_mentions": 139,
+    "figure_concept_links": 6178,
+    "candidate_links": 10935,
+    "rdf_triples": 143082,
+    "schema_triples": 154,
+    "taxonomy_triples": 626,
+    "relationship_triples": 142762,
+    "topic_categories": 8,
+    "categorized_concepts": 115,
+    "uncategorized_concepts": 805,
+    "category_memberships": 116
+  },
+  "by_working_group": {
+    "WG1": {
+      "figures": 510,
+      "figure_concept_links": 2895,
+      "distinct_linked_concepts": 327
+    },
+    "WG2": {
+      "figures": 453,
+      "figure_concept_links": 2021,
+      "distinct_linked_concepts": 261
+    },
+    "WG3": {
+      "figures": 347,
+      "figure_concept_links": 1262,
+      "distinct_linked_concepts": 189
+    }
+  },
+  "validation": {
+    "rdf_integrity": "passed",
+    "shacl": "passed",
+    "shacl_shapes": 7
+  },
+  "notes": [
+    "Caption mentions and project-curated navigation facets do not establish scientific causation or visual depiction.",
+    "Ambiguous/excluded mentions retain candidate evidence but do not generate accepted figure-concept links.",
+    "Full captions and glossary definitions are omitted unless explicitly opted in; matched text snippets remain.",
+    "Scientific extraction accuracy needs human review; RDF structural correctness does not imply scientific validity.",
+    "Published IPCC material and glossary-derived content may have reuse restrictions."
+  ]
+}

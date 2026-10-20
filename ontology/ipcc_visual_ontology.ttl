@@ -1,0 +1,195 @@
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix ipcc: <https://neelkumar01.github.io/IPCC-visual-knowledge-graph/ontology#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<https://neelkumar01.github.io/IPCC-visual-knowledge-graph/ontology> a owl:Ontology ;
+    dcterms:description "Schema for source-traceable IPCC AR6 figures, glossary concepts, and caption evidence; scientific topic and causal relationships are intentionally not inferred."@en ;
+    dcterms:title "IPCC AR6 Visual Knowledge Graph Ontology"@en ;
+    rdfs:seeAlso <https://www.ipcc.ch/assessment-report/ar6/> ;
+    owl:versionInfo "0.1.0" .
+
+ipcc:Chapter a owl:Class ;
+    rdfs:label "Chapter"@en ;
+    rdfs:comment "A numbered or cross-cutting report chapter."@en ;
+    rdfs:subClassOf ipcc:ReportSection .
+
+ipcc:candidateConcept a owl:ObjectProperty ;
+    rdfs:label "candidate concept"@en ;
+    rdfs:comment "Possible glossary interpretation, including unresolved alternatives."@en ;
+    rdfs:domain ipcc:CaptionMention ;
+    rdfs:range ipcc:ScientificConcept .
+
+ipcc:captionSHA256 a owl:DatatypeProperty ;
+    rdfs:label "caption SHA-256"@en ;
+    rdfs:comment "Digest of the exact original caption text when available."@en ;
+    rdfs:domain ipcc:Figure ;
+    rdfs:range xsd:string .
+
+ipcc:captionStatus a owl:DatatypeProperty ;
+    rdfs:label "caption status"@en ;
+    rdfs:comment "Whether the official source supplied caption text: available or missing."@en ;
+    rdfs:domain ipcc:Figure ;
+    rdfs:range xsd:string .
+
+ipcc:captionText a owl:DatatypeProperty ;
+    rdfs:label "caption text"@en ;
+    rdfs:comment "Optional original caption; publication may be subject to source reuse policy."@en ;
+    rdfs:domain ipcc:Figure ;
+    rdfs:range xsd:string .
+
+ipcc:denotesConcept a owl:ObjectProperty ;
+    rdfs:label "denotes concept"@en ;
+    rdfs:comment "Selected glossary concept for a non-excluded caption mention."@en ;
+    rdfs:domain ipcc:CaptionMention ;
+    rdfs:range ipcc:ScientificConcept .
+
+ipcc:endOffset a owl:DatatypeProperty ;
+    rdfs:label "end offset"@en ;
+    rdfs:comment "Zero-based Python character offset, exclusive, in the original caption."@en ;
+    rdfs:domain ipcc:CaptionMention ;
+    rdfs:range xsd:nonNegativeInteger .
+
+ipcc:figureInSection a owl:ObjectProperty ;
+    rdfs:label "figure in section"@en ;
+    rdfs:comment "Section containing this figure."@en ;
+    rdfs:domain ipcc:Figure ;
+    rdfs:range ipcc:ReportSection .
+
+ipcc:figureInWorkingGroup a owl:ObjectProperty ;
+    rdfs:label "figure in working group"@en ;
+    rdfs:comment "Working group publishing this figure."@en ;
+    rdfs:domain ipcc:Figure ;
+    rdfs:range ipcc:WorkingGroup .
+
+ipcc:glossaryWorkingGroup a owl:ObjectProperty ;
+    rdfs:label "glossary working group"@en ;
+    rdfs:comment "Working-group attribution recorded in the glossary source, not evidence that a figure uses the term."@en ;
+    rdfs:domain ipcc:ScientificConcept ;
+    rdfs:range ipcc:WorkingGroup .
+
+ipcc:hasCaptionMention a owl:ObjectProperty ;
+    rdfs:label "has caption mention"@en ;
+    rdfs:comment "Observed lexical mention in the figure caption, including excluded or ambiguous mentions."@en ;
+    rdfs:domain ipcc:Figure ;
+    rdfs:range ipcc:CaptionMention ;
+    owl:inverseOf ipcc:mentionInFigure .
+
+ipcc:hasImageReference a owl:ObjectProperty ;
+    rdfs:label "has image reference"@en ;
+    rdfs:comment "Image URL listed for this figure, without implying download success."@en ;
+    rdfs:domain ipcc:Figure ;
+    rdfs:range ipcc:ImageReference .
+
+ipcc:imagePosition a owl:DatatypeProperty ;
+    rdfs:label "image position"@en ;
+    rdfs:comment "Zero-based order of this image reference in the original figure."@en ;
+    rdfs:domain ipcc:ImageReference ;
+    rdfs:range xsd:nonNegativeInteger .
+
+ipcc:imageURL a owl:DatatypeProperty ;
+    rdfs:label "image URL"@en ;
+    rdfs:comment "Published candidate image URL, without reachability assertions."@en ;
+    rdfs:domain ipcc:ImageReference ;
+    rdfs:range xsd:anyURI .
+
+ipcc:matchKind a owl:DatatypeProperty ;
+    rdfs:label "match kind"@en ;
+    rdfs:comment "Lexical match type: label, alias, or mixed."@en ;
+    rdfs:domain ipcc:CaptionMention ;
+    rdfs:range xsd:string .
+
+ipcc:matchedText a owl:DatatypeProperty ;
+    rdfs:label "matched text"@en ;
+    rdfs:comment "Exact substring of the original caption for this mention."@en ;
+    rdfs:domain ipcc:CaptionMention ;
+    rdfs:range xsd:string .
+
+ipcc:mentionsConcept a owl:ObjectProperty ;
+    rdfs:label "mentions concept"@en ;
+    rdfs:comment "Convenience link: a resolved, non-excluded concept is mentioned in the figure caption, not necessarily depicted in its image."@en ;
+    rdfs:domain ipcc:Figure ;
+    rdfs:range ipcc:ScientificConcept .
+
+ipcc:partOfReport a owl:ObjectProperty ;
+    rdfs:label "part of report"@en ;
+    rdfs:comment "Working group membership in an assessment report."@en ;
+    rdfs:domain ipcc:WorkingGroup ;
+    rdfs:range ipcc:AssessmentReport .
+
+ipcc:qualityRule a owl:DatatypeProperty ;
+    rdfs:label "quality rule"@en ;
+    rdfs:comment "Identifier of a recorded extraction or exclusion rule, if applied."@en ;
+    rdfs:domain ipcc:CaptionMention ;
+    rdfs:range xsd:string .
+
+ipcc:resolution a owl:DatatypeProperty ;
+    rdfs:label "resolution"@en ;
+    rdfs:comment "Extractor resolution: lexical, explicit_expansion, chemical_formula, ambiguous, or excluded."@en ;
+    rdfs:domain ipcc:CaptionMention ;
+    rdfs:range xsd:string .
+
+ipcc:sectionCode a owl:DatatypeProperty ;
+    rdfs:label "section code"@en ;
+    rdfs:comment "Original section identifier from the figure corpus."@en ;
+    rdfs:domain ipcc:ReportSection ;
+    rdfs:range xsd:string .
+
+ipcc:sectionOfWorkingGroup a owl:ObjectProperty ;
+    rdfs:label "section of working group"@en ;
+    rdfs:comment "Working group publishing this section."@en ;
+    rdfs:domain ipcc:ReportSection ;
+    rdfs:range ipcc:WorkingGroup .
+
+ipcc:startOffset a owl:DatatypeProperty ;
+    rdfs:label "start offset"@en ;
+    rdfs:comment "Zero-based Python character offset, inclusive, in the original caption."@en ;
+    rdfs:domain ipcc:CaptionMention ;
+    rdfs:range xsd:nonNegativeInteger .
+
+ipcc:workingGroupCode a owl:DatatypeProperty ;
+    rdfs:label "working group code"@en ;
+    rdfs:comment "WG1, WG2 or WG3."@en ;
+    rdfs:domain ipcc:WorkingGroup ;
+    rdfs:range xsd:string .
+
+ipcc:AssessmentReport a owl:Class ;
+    rdfs:label "Assessment report"@en ;
+    rdfs:comment "An assessment report, such as IPCC AR6."@en .
+
+ipcc:mentionInFigure a owl:ObjectProperty ;
+    rdfs:label "mention in figure"@en ;
+    rdfs:comment "Figure whose caption contains this exact mention."@en ;
+    rdfs:domain ipcc:CaptionMention ;
+    rdfs:range ipcc:Figure .
+
+ipcc:ImageReference a owl:Class ;
+    rdfs:label "Image reference"@en ;
+    rdfs:comment "A published image URL reference, not a verified or downloaded binary."@en .
+
+ipcc:ReportSection a owl:Class ;
+    rdfs:label "Report section"@en ;
+    rdfs:comment "A chapter, summary, annex or atlas section containing figures."@en .
+
+ipcc:ScientificConcept a owl:Class ;
+    rdfs:label "Scientific concept"@en ;
+    rdfs:comment "A glossary concept identity; a term match is not a validated scientific assertion."@en ;
+    rdfs:subClassOf skos:Concept .
+
+ipcc:WorkingGroup a owl:Class ;
+    rdfs:label "Working group"@en ;
+    rdfs:comment "An IPCC assessment working group (WG1, WG2 or WG3)."@en .
+
+ipcc:Figure a owl:Class ;
+    rdfs:label "Figure"@en ;
+    rdfs:comment "A figure identified on an IPCC report figure page; its image may be unavailable."@en ;
+    rdfs:subClassOf prov:Entity .
+
+ipcc:CaptionMention a owl:Class ;
+    rdfs:label "Caption mention"@en ;
+    rdfs:comment "A specific text span in a figure caption with auditable extraction status."@en ;
+    rdfs:subClassOf prov:Entity .
+

@@ -1,8 +1,8 @@
 {
   "report_type": "concept_extraction_quality",
-  "generated_at": "2026-10-20T11:44:31+00:00",
-  "method": "glossary_lexical_v1",
-  "database_schema_version": 1,
+  "generated_at": "2026-10-20T12:11:05+00:00",
+  "method": "glossary_lexical_quality_v2",
+  "database_schema_version": 2,
   "sources": {
     "corpus_sha256": "2be04603057d3a2e0c8f330cb686d252f0628da3ab06ce55e9ae6ab7fcfaf3c2",
     "vocabulary_sha256": "080961c6d64d4dbc6ce404be98ee221a85740995a2a384de008b7c28ea926ef2",
@@ -19,14 +19,16 @@
     "missing_captions": 13,
     "figures_with_mentions": 1236,
     "captioned_figures_without_matches": 61,
-    "figures_with_resolved_concepts": 1231,
+    "figures_with_resolved_concepts": 1215,
     "total_mentions": 10398,
-    "resolved_mentions": 9891,
-    "ambiguous_mentions": 507,
+    "resolved_mentions": 10259,
+    "ambiguous_mentions": 0,
+    "excluded_mentions": 139,
+    "formula_resolved_mentions": 507,
     "explicit_expansion_mentions": 30,
-    "figure_concept_links": 6140,
+    "figure_concept_links": 6178,
     "vocabulary_terms": 920,
-    "distinct_resolved_concepts": 507
+    "distinct_resolved_concepts": 508
   },
   "by_working_group": {
     "WG1": {
@@ -35,10 +37,11 @@
       "missing_captions": 1,
       "figures_with_mentions": 486,
       "captioned_figures_without_matches": 23,
-      "figures_with_resolved_concepts": 485,
+      "figures_with_resolved_concepts": 486,
       "total_mentions": 4862,
-      "resolved_mentions": 4602,
-      "ambiguous_mentions": 260,
+      "resolved_mentions": 4862,
+      "ambiguous_mentions": 0,
+      "excluded_mentions": 0,
       "distinct_resolved_concepts": 327
     },
     "WG2": {
@@ -47,10 +50,11 @@
       "missing_captions": 1,
       "figures_with_mentions": 428,
       "captioned_figures_without_matches": 24,
-      "figures_with_resolved_concepts": 427,
+      "figures_with_resolved_concepts": 428,
       "total_mentions": 3242,
-      "resolved_mentions": 3224,
-      "ambiguous_mentions": 18,
+      "resolved_mentions": 3227,
+      "ambiguous_mentions": 0,
+      "excluded_mentions": 15,
       "distinct_resolved_concepts": 261
     },
     "WG3": {
@@ -59,16 +63,19 @@
       "missing_captions": 11,
       "figures_with_mentions": 322,
       "captioned_figures_without_matches": 14,
-      "figures_with_resolved_concepts": 319,
+      "figures_with_resolved_concepts": 301,
       "total_mentions": 2294,
-      "resolved_mentions": 2065,
-      "ambiguous_mentions": 229,
-      "distinct_resolved_concepts": 188
+      "resolved_mentions": 2170,
+      "ambiguous_mentions": 0,
+      "excluded_mentions": 124,
+      "distinct_resolved_concepts": 189
     }
   },
-  "ambiguous_spellings_observed": {
-    "co 2": 492,
-    "co2": 15
+  "ambiguous_spellings_observed": {},
+  "quality_rules_applied": {
+    "citation_source_label": 139,
+    "co2_equivalent_qualifier": 35,
+    "co2_formula": 472
   },
   "top_concepts_by_figures": [
     {
@@ -82,6 +89,11 @@
       "figures": 256
     },
     {
+      "term_id": "ipcc-ar6-ddf74783a6568c47",
+      "label": "Carbon dioxide",
+      "figures": 193
+    },
+    {
       "term_id": "ipcc-ar6-90eae63487cae2df",
       "label": "Land",
       "figures": 162
@@ -90,11 +102,6 @@
       "term_id": "ipcc-ar6-f28d567cf5453b5c",
       "label": "Climate change",
       "figures": 162
-    },
-    {
-      "term_id": "ipcc-ar6-41cf6794ba4200b8",
-      "label": "Source",
-      "figures": 156
     },
     {
       "term_id": "ipcc-ar6-901bf84e75c67b2b",
@@ -174,7 +181,10 @@
   ],
   "notes": [
     "Matches are literal glossary terms/aliases in captions, not verified visual content.",
-    "An ambiguous mention has no selected concept and cannot create a figure_concepts link.",
+    "Ambiguous or excluded mentions have no selected concept and cannot create a figure_concepts link.",
+    "All original mention spans and candidates are retained for audit, including excluded citations.",
+    "CO2 formula disambiguation follows explicit IPCC notation; it is a heuristic requiring manual evaluation.",
+    "No precision or recall metric is claimed without an independently annotated gold sample.",
     "Caption-missing figures are retained; their mentions are empty.",
     "A figure-concept link records a caption mention, not a causal or ontology relation.",
     "Concept extraction is vocabulary-limited; absence of a match is not absence of a topic."
