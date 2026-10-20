@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ipcc-visual-knowledge-graph"
+version = "0.1.0"
+description = "Source-backed exploration of IPCC AR6 figure knowledge graphs"
+requires-python = ">=3.10"
+dependencies = [
+    "rdflib>=7,<8",
+    "requests",
+    "beautifulsoup4",
+]
+
+[project.optional-dependencies]
+pipeline = [
+    "pydantic>=2,<3",
+    "pyshacl",
+]
+
+[tool.setuptools]
+packages = ["ipcc_kg", "concepts", "ontology"]
