@@ -335,6 +335,7 @@ header {display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-height:69px;
 .identity {min-width:178px;margin-right:auto}
 .identity strong {font-size:15px;letter-spacing:-.015em}
 .identity div {color:var(--muted);font-size:11px;margin-top:3px}
+.searchwrap {position:relative;flex:1;min-width:160px;max-width:370px}
 #search {width:100%;height:36px;border:1px solid var(--line);border-radius:12px;
  background:#ffffff;padding:8px 12px 8px 33px;color:#1e293b;font-size:13px}
 .searchwrap .glass {position:absolute;top:50%;left:12px;transform:translateY(-50%);
