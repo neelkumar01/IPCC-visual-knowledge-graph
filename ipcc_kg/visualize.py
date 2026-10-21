@@ -313,8 +313,11 @@ _HTML_DOCUMENT = r'''<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 <title>IPCC Knowledge Graph — __IPCC_TITLE__</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400..900&display=swap" rel="stylesheet">
 <style>
-:root {color-scheme:light; font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+:root {color-scheme:light; font-family:'Nunito',ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
  --ink:#202d3e;--muted:#65748a;--line:#dce5ee;--surface:#fff;--base:#f7f9fc;
  --focus:#1d70c8;--concept:#168368;--figure:#317cc4;--section:#b87928;
  --mention:#8b6db2;--image:#29858b;--topic:#ac764d;--report:#7b8295}
@@ -332,10 +335,12 @@ header {display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-height:69px;
 .identity {min-width:178px;margin-right:auto}
 .identity strong {font-size:15px;letter-spacing:-.015em}
 .identity div {color:var(--muted);font-size:11px;margin-top:3px}
-.searchwrap {position:relative;flex:1;min-width:160px;max-width:370px}
-#search {width:100%;height:36px;border:1px solid var(--line);border-radius:9px;
- background:#f8fafc;padding:8px 12px 8px 33px;color:var(--ink);font-size:13px}
-.searchwrap .glass {position:absolute;top:9px;left:10px;font-size:13px;color:var(--muted)}
+#search {width:100%;height:36px;border:1px solid var(--line);border-radius:12px;
+ background:#ffffff;padding:8px 12px 8px 33px;color:#1e293b;font-size:13px}
+.searchwrap .glass {position:absolute;top:50%;left:12px;transform:translateY(-50%);
+ display:flex;align-items:center;justify-content:center;color:#1e293b;pointer-events:none}
+#search:focus {outline:none;border-color:var(--line);box-shadow:none}
+#search:focus-visible {outline:2px solid #ffffff}
 #matches {display:none;position:absolute;z-index:12;top:41px;left:0;right:0;background:white;
  border:1px solid var(--line);box-shadow:0 12px 35px #26385025;border-radius:10px;max-height:235px;overflow:auto}
 #matches button {width:100%;border:0;border-radius:0;text-align:left;padding:10px 12px;display:block}
@@ -358,15 +363,14 @@ header {display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-height:69px;
 .graph-node {cursor:grab;outline:none}
 .graph-node.dragging {cursor:grabbing}
 .graph-node circle {stroke-width:2;transition:stroke-width .12s}
-.graph-node.selected circle,.graph-node:focus-visible circle {stroke:#182b40;stroke-width:3.5}
-.graph-node text {font-family:inherit;fill:#23344a;font-size:11px;font-weight:580;text-anchor:middle;
+.graph-node text {font-family:inherit;fill:#23344a;font-size:15px;font-weight:700;text-anchor:middle;
  pointer-events:none;paint-order:stroke;stroke:#fff;stroke-width:2px;stroke-linejoin:round}
-.graph-node.secondary text {font-size:10px;font-weight:500}
+.graph-node.secondary text {font-size:14px;font-weight:700}
 .graph-node:focus-visible {filter:drop-shadow(0 0 4px #3080bb88)}
 .canvas-tools {position:absolute;right:17px;bottom:17px;display:flex;flex-direction:column;gap:6px}
-.canvas-tools button {font-size:15px;width:36px;height:36px;padding:0;box-shadow:0 2px 10px #1e293b10}
-.canvas-help {position:absolute;left:17px;bottom:17px;font-size:11px;color:var(--muted);
- background:#ffffffda;padding:7px 9px;border:1px solid #e8edf3;border-radius:8px;pointer-events:none}
+.canvas-tools button {font-size:15px;width:36px;height:36px;padding:0;display:grid;place-items:center;border-radius:15px;box-shadow:0 2px 10px #1e293b10}
+.canvas-tools button:hover,.canvas-tools button:active {background:#ec4863;border-color:#ec4863;color:#ffffff}
+.canvas-tools button:hover svg,.canvas-tools button:active svg {stroke:#ffffff}
 .metrics {position:absolute;left:17px;top:14px;color:#61728b;font-size:11px;
  background:#ffffffdb;padding:7px 10px;border:1px solid #e8edf3;border-radius:8px}
 #empty {display:none;position:absolute;top:43%;left:50%;transform:translate(-50%,-50%);
@@ -384,14 +388,17 @@ header {display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-height:69px;
 .chip {display:inline-block;padding:3px 8px;border-radius:14px;background:#eef4fa;
  color:#37526a;font-size:11px;margin:2px 5px 2px 0}
 .stat {font-size:12px;color:#5e7086;margin:8px 0}
-.hero {width:100%;max-height:260px;object-fit:contain;border-radius:10px;
- background:#f5f8fa;border:1px solid var(--line);margin:8px 0 4px}
+.hero {display:block;width:100%;height:auto;max-height:none;border-radius:5px;
+ background:#f5f8fa;border:1px solid var(--line);margin:8px auto 4px}
 .link-row {display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:10px 0}
 .pill-button {font-weight:500;margin:3px 4px 3px 0;padding:5px 9px;font-size:11px;border-radius:16px}
-.evidence {border-left:3px solid #8cbda5;padding:7px 9px;margin:8px 0;
- background:#f2faf6;border-radius:0 7px 7px 0;font-size:12px;line-height:1.45;overflow-wrap:anywhere}
-.evidence.warn {border-left-color:#d09d5b;background:#fffaef}
-.evidence small {display:block;color:#5d6a79;margin-top:5px}
+.evidence {border:none;border-bottom:1px solid var(--line);border-radius:0;
+ background:transparent;padding:12px 0 16px;margin:0;font-size:12px;
+ line-height:1.5;overflow-wrap:anywhere}
+.evidence.warn {background:transparent;border-bottom-color:#d09d5b}
+.evidence strong {display:block;font-size:13px;font-weight:700;color:var(--ink);margin-bottom:5px}
+.evidence small {display:block;color:var(--muted);margin-top:5px}
+.evidence .pill-button {border-radius:8px}
 .expand-actions {display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
 .expand-actions button {padding:6px 9px;font-size:11px}
 #panel details {margin-top:15px;border-top:1px solid var(--line);padding-top:12px}
@@ -414,15 +421,31 @@ footer .note {margin-left:auto}
  #panel {border-left:0;border-top:1px solid var(--line);padding:14px}
  footer {height:auto;min-height:42px;gap:9px}
  footer .note {width:100%;margin:0}
- .canvas-help {display:none}
 }
 @media (prefers-reduced-motion:reduce) {*,*:before,*:after {scroll-behavior:auto!important;transition:none!important}}
+/* Dark typography throughout the interface */
+:root {--muted:#172033}
+
+.identity div,#matches small,.metrics,#panel h3,.chip,.stat,
+.evidence small,#panel summary,.meta-row span,.source-note,footer {
+ color:#172033!important
+}
+
+#search::placeholder {color:#172033;opacity:1}
 </style>
 </head>
 <body>
 <header>
- <div class="identity"><strong>IPCC Knowledge Graph</strong><div id="subtitle">AR6 · Source-backed network</div></div>
- <div class="searchwrap"><span class="glass" aria-hidden="true">⌕</span>
+ <div class="identity"><strong>IPCC Figures Knowledge Graph</strong><div id="subtitle">AR6 · Source-backed network</div></div>
+ <div class="searchwrap">
+  <span class="glass" aria-hidden="true">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="3"
+        stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.35-4.35" />
+    </svg>
+  </span>
   <input id="search" type="search" placeholder="Find a node in this graph" aria-label="Find a node in the exported graph" autocomplete="off">
   <div id="matches" role="listbox" aria-label="Matching graph nodes"></div>
  </div>
@@ -442,19 +465,81 @@ footer .note {margin-left:auto}
  <section class="canvas-wrap" aria-label="Interactive RDF knowledge graph">
   <svg id="network" role="group" aria-label="Draggable, zoomable graph. Select a node or relationship to inspect evidence."
        tabindex="0" xmlns="http://www.w3.org/2000/svg">
-   <defs><marker id="arrow" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto" markerUnits="userSpaceOnUse">
-    <path d="M0,0 L6,3 L0,6 Z" fill="#8295a8"></path></marker></defs>
+   <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="4.5" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M0,0 L9,4.5 L0,9 Z" fill="#8295a8"></path></marker></defs>
    <g id="viewport"><g id="edges"></g><g id="nodes"></g></g>
   </svg>
   <div class="metrics" id="metrics">Loading network…</div>
   <div id="empty" role="status">No graph nodes in this query.<br>Try a different concept or working group.</div>
   <div class="canvas-tools" aria-label="Graph navigation controls">
-   <button id="zoom-in" title="Zoom in" aria-label="Zoom in">+</button>
-   <button id="zoom-out" title="Zoom out" aria-label="Zoom out">−</button>
-   <button id="fit" title="Fit visible network" aria-label="Fit visible network">⊡</button>
-   <button id="reset" title="Reset network and filters" aria-label="Reset network">↺</button>
+   <button id="zoom-in" title="Zoom in" aria-label="Zoom in">
+      <svg
+        width="15"
+        height="15"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="3"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M12 5v14M5 12h14" />
+      </svg>
+    </button>
+
+    <button id="zoom-out" title="Zoom out" aria-label="Zoom out">
+      <svg
+        width="15"
+        height="15"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="3"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M5 12h14" />
+      </svg>
+    </button>
+
+    <button id="fit" title="Fit visible network" aria-label="Fit visible network">
+      <svg
+        width="15"
+        height="15"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="3"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+        <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
+        <path d="M3 16v3a2 2 0 0 0 2 2h3" />
+        <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+      </svg>
+    </button>
+
+    <button id="reset" title="Reset network and filters" aria-label="Reset network">
+      <svg
+        width="15"
+        height="15"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="3"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M3 11a9 9 0 1 1 2.96 6.74" />
+        <path d="M3 3v8h8" />
+      </svg>
+    </button>
   </div>
-  <div class="canvas-help" aria-hidden="true">Scroll to zoom · Drag to pan · Drag nodes to arrange</div>
  </section>
  <aside id="panel" aria-live="polite" aria-label="Node and relationship details"></aside>
 </main>
@@ -648,7 +733,7 @@ footer .note {margin-left:auto}
      for(const e of connections){
        const a=coords.get(e.from),b=coords.get(e.to);if(!a||!b)continue;
        const dx=b.x-a.x,dy=b.y-a.y,d=Math.max(1,Math.hypot(dx,dy));
-       const desired=e.family==='caption'?145:115;
+       const desired=e.family==='caption'?200:200;
        const tension=Math.max(-8,Math.min(8,(d-desired)*.012));
        const fx=tension*dx/d,fy=tension*dy/d;
        a.fx+=fx;a.fy+=fy;b.fx-=fx;b.fy-=fy;
@@ -923,9 +1008,9 @@ footer .note {margin-left:auto}
    add(panel,'div','Explore IPCC AR6','kicker');
    add(panel,'h2',payload.query);
    add(panel,'p',`${payload.selectedFigures} selected figures · ${payload.nodes.filter(n=>n.kind==='concept').length} recorded concepts in the exported neighborhood.`);
-   add(panel,'p','Select a circle or relationship to inspect its original RDF meaning, figure images, and caption evidence.','muted');
-   add(panel,'p','Drag nodes, scroll to zoom, and use Expand network to reveal the remaining published connections.','muted');
-   add(panel,'p','The export is self-contained for graph interaction. IPCC image previews and source links still require internet access.','source-note');
+   add(panel,'p','Select a circle or relationship to inspect its original RDF meaning, figure images and caption evidence.','muted');
+   add(panel,'p','Drag nodes, scroll to zoom and use Expand network to reveal the remaining published connections.','muted');
+   add(panel,'p','The export is self contained for graph interaction. IPCC image previews and source links still require internet access.','source-note');
  }
  function zoom(amount,point={x:width/2,y:height/2}){
    const next=Math.max(.18,Math.min(3.7,scale*amount));
