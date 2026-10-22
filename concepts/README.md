@@ -94,3 +94,31 @@ The resulting dataset contains:
 <br>
 
 **Scope:** These links show which scientific concepts are **mentioned in figure captions**. They do not claim that the concepts were visually detected in the images or that a causal relationship exists. Human-reviewed precision and recall have not yet been established.
+
+<br>
+
+### Concept Database (`concepts.db`)
+
+The `data/processed/concepts.db` SQLite database stores scientific concepts, caption matches, and figure–concept relationships.
+
+It contains **8 tables and 1 view**.
+
+| Table / View | Purpose |
+|---|---|
+| `concepts` | Stores scientific concept IDs, names, and definitions. |
+| `concept_aliases` | Stores alternative names and abbreviations for concepts. |
+| `concept_working_groups` | Stores the IPCC Working Groups associated with each concept. |
+| `concept_source_series` | Stores the original glossary source information. |
+| `figures` | Stores figure IDs and source information used during concept matching. |
+| `mentions` | Stores matched caption text, character positions, and match status. |
+| `mention_candidates` | Stores possible scientific concepts for each caption mention. |
+| `metadata` | Stores source information and checksums for tracking data versions. |
+| `figure_concepts` *(view)* | Shows unique accepted figure–concept relationships. |
+
+**Database statistics:**
+- **920** scientific concepts
+- **10,398** caption mentions
+- **10,259** accepted mentions
+- **6,178** unique accepted figure–concept relationships
+
+*Note: `figure_concepts` is a database view generated from accepted mentions, not a separate stored table.*
