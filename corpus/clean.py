@@ -1,14 +1,13 @@
-"""Clean validated IPCC AR6 figure records without changing the raw corpus.
+"""
+Clean validated IPCC AR6 figure records without modifying raw data
 
-This module performs conservative, deterministic cleaning only:
-- validate records using the Phase 2 FigureRecord schema;
-- discard known IPCC website footer assets from figure image candidates;
-- remove repeated image URLs while preserving image/panel order;
-- flag missing captions and figure images without inventing replacements;
-- detect duplicate figure records and report malformed input.
+- Validate records using the Phase 2 FigureRecord schema
+- Remove known IPCC footer images from figure image candidates
+- Remove duplicate image URLs while preserving their order
+- Flag missing captions and images without adding replacements
+- Detect duplicate figure records and report invalid input
 
-It does not scrape, download images, alter scientific captions, read/write
-files, or create the SQLite database. Those are separate pipeline steps.
+Does not scrape, download images, modify scientific captions, read or write files or create the SQLite database
 """
 
 from __future__ import annotations
@@ -22,15 +21,15 @@ from pydantic import ValidationError
 from corpus.schemas import FigureRecord
 
 
-# Known webpage decoration observed in the Phase 1 IPCC AR6 JSON exports.
-# Be conservative: a generic /static/ image might still be a real figure.
 _DECORATIVE_FILENAMES = frozenset(
     {"footer-left.png", "footer-right.png", "footer-center.png", "footer-centre.png"}
 )
 
 
 class CleanFigure(FigureRecord):
-    """A source-backed figure with cleaned image references and explicit status."""
+    """
+    A source backed figure with cleaned image references and explicit status
+    """
 
     caption_status: Literal["available", "missing"]
     image_status: Literal["referenced", "missing"]
@@ -38,7 +37,9 @@ class CleanFigure(FigureRecord):
 
 @dataclass(frozen=True, slots=True)
 class CleaningIssue:
-    """A rejected or repeated raw record, identified without copying captions."""
+    """
+    A rejected or repeated raw record, identified without copying captions
+    """
 
     index: int
     code: Literal["invalid_record", "duplicate_record"]
@@ -48,7 +49,9 @@ class CleaningIssue:
 
 @dataclass(frozen=True, slots=True)
 class CleaningResult:
-    """Cleaned figures and information needed by the later quality report."""
+    """
+    Cleaned figures and information needed by the later quality report
+    """
 
     figures: tuple[CleanFigure, ...]
     issues: tuple[CleaningIssue, ...]
@@ -58,7 +61,9 @@ class CleaningResult:
 
     @property
     def summary(self) -> dict[str, int]:
-        """Small JSON-ready summary; no persistence or report formatting here."""
+        """
+        Small JSON ready summary; no persistence or report formatting here
+        """
         return {
             "input_records": self.input_count,
             "cleaned_figures": len(self.figures),
@@ -72,13 +77,17 @@ class CleaningResult:
 
 
 def _is_decorative_image(url: str) -> bool:
-    """Recognize known IPCC site furniture, not general static-hosted images."""
+    """
+    Recognize known IPCC site furniture not general static hosted images
+    """
     path = urlsplit(url).path.lower()
     return "/static/" in path and path.rsplit("/", 1)[-1] in _DECORATIVE_FILENAMES
 
 
 def _clean_image_urls(urls: list[str]) -> tuple[list[str], int, int]:
-    """Keep real candidates in original order; count each type of removal."""
+    """
+    Keep real candidates in original order & count each type of removal
+    """
     kept: list[str] = []
     seen: set[str] = set()
     decorative_removed = 0
@@ -99,8 +108,6 @@ def _clean_image_urls(urls: list[str]) -> tuple[list[str], int, int]:
 def _clean_validated(record: FigureRecord) -> tuple[CleanFigure, int, int]:
     urls, decorative_removed, duplicates_removed = _clean_image_urls(record.image_urls)
 
-    # Retain the collector's preferred candidate when it survives filtering.
-    # Otherwise, use the first remaining candidate; never synthesize an image.
     primary_image = record.image_url if record.image_url in urls else (urls[0] if urls else None)
 
     cleaned = CleanFigure.model_validate(
@@ -116,10 +123,8 @@ def _clean_validated(record: FigureRecord) -> tuple[CleanFigure, int, int]:
 
 
 def clean_figure(record: FigureRecord | Mapping[str, Any]) -> CleanFigure:
-    """Clean one figure; raise ValidationError for malformed records.
-
-    No modification to the input mapping or Pydantic model is performed.
-    Image status means a candidate URL exists, not that an HTTP download works.
+    """
+    Clean one figure & raise ValidationError for malformed records
     """
     validated = FigureRecord.model_validate(record)
     return _clean_validated(validated)[0]
@@ -128,12 +133,14 @@ def clean_figure(record: FigureRecord | Mapping[str, Any]) -> CleanFigure:
 def clean_figures(
     records: Iterable[FigureRecord | Mapping[str, Any]],
 ) -> CleaningResult:
-    """Clean a corpus and deduplicate by provenance-derived figure ID.
+    """
+    Clean a corpus and deduplicate by provenance derived figure ID
 
     Exact duplicates are kept once and reported. Conflicting duplicate IDs
-    raise ValueError rather than silently choosing potentially wrong evidence.
+    raise ValueError rather than silently choosing potentially wrong evidence
+
     Invalid inputs are excluded from processed output and reported; original
-    raw JSON is never changed.
+    raw JSON is never changed
     """
     figures: dict[str, CleanFigure] = {}
     issues: list[CleaningIssue] = []
@@ -163,7 +170,7 @@ def clean_figures(
         duplicates_removed += repeated
         existing = figures.get(cleaned.figure_id)
         if existing is not None:
-            # Re-crawling the same figure at a different time is not a conflict.
+            
             without_timestamp = {"collected_at"}
             if existing.model_dump(exclude=without_timestamp) != cleaned.model_dump(
                 exclude=without_timestamp

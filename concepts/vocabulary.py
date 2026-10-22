@@ -1,19 +1,18 @@
-"""Build and query a source-traceable IPCC AR6 scientific vocabulary.
+"""
+Build and query an IPCC AR6 scientific vocabulary with source references
 
-This module imports TIB Hannover's structured HTML export of the IPCC AR6
-online glossary. It does *not* infer definitions, translate terms, or decide
-that similarly worded scientific concepts are equivalent.
+- Import glossary terms from TIB Hannover's structured HTML export
+- Do not infer definitions, translate terms, or merge similar concepts
+- Keep source attribution, as the third party export is not independently verified
+- Review IPCC and source reuse permissions before publishing full definitions
+- Do not download data when importing this module
 
-The structured export is a third-party derivative of the official IPCC
-Glossary; its contents are not independently verified here. Always retain the
-source attribution and review IPCC/source reuse permissions before publishing
-full definitions. No data is downloaded merely by importing this module.
-
-Run from the project root:
+Usage:
     python -m concepts.vocabulary
     python -m concepts.vocabulary --source path/to/glossary-ar6.html
 
-Requires: requests, beautifulsoup4 (already used by the figure collector).
+Requires:
+    requests, beautifulsoup4
 """
 
 from __future__ import annotations
@@ -35,7 +34,7 @@ from bs4 import BeautifulSoup
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = PROJECT_ROOT / "data" / "processed" / "ipcc_ar6_vocabulary.json"
-# Public, structured *derived* export, not an official IPCC-hosted API.
+
 DEFAULT_SOURCE = (
     "https://raw.githubusercontent.com/TIBHannover/ClimateKG-Data-Bench/"
     "main/data/glossary-ar6.html"
@@ -45,15 +44,15 @@ WORKING_GROUP_CODES = {"WGI": "WG1", "WGII": "WG2", "WGIII": "WG3"}
 SCHEMA_VERSION = "1.0"
 MAX_HTML_BYTES = 5_000_000
 
-# Hyphens and whitespace differ across report typography. Normalize only for
-# lookup; the source's term label and definition are preserved unchanged.
 _DASHES = str.maketrans({"‐": "-", "‑": "-", "‒": "-", "–": "-", "—": "-", "−": "-"})
 _ACRONYM = re.compile(r"^(?:[A-Z][A-Z0-9+./-]{1,14}|[A-Z]{2,14}s)$")
 _END_PAREN = re.compile(r"\(([^()]*)\)\s*$")
 
 
 def normalize_term(text: str) -> str:
-    """Conservative comparison key; does not equate scientific near-synonyms."""
+    """
+    Conservative comparison key; does not equate scientific near synonyms
+    """
     if not isinstance(text, str):
         raise TypeError("Term must be a string")
     value = unicodedata.normalize("NFKC", text).translate(_DASHES)
@@ -65,7 +64,8 @@ def _visible_text(element: Any) -> str:
 
 
 def _aliases(label: str, alternate_heading: str) -> tuple[str, ...]:
-    """Keep only explicit headings and clearly marked final acronyms.
+    """
+    Keep only explicit headings and clearly marked final acronyms
 
     The 'Also known as' text in the source is often simply its original full
     heading (e.g. 'Atlantic Meridional Overturning Circulation (AMOC)').
@@ -92,7 +92,8 @@ def _aliases(label: str, alternate_heading: str) -> tuple[str, ...]:
 
 @dataclass(frozen=True, slots=True)
 class GlossaryTerm:
-    """A glossary headword, its source definition and *explicit* aliases.
+    """
+    A glossary headword, its source definition and *explicit* aliases.
 
     working_groups may be empty: the upstream export includes some records
     tagged NONE or special-report-only. Never fabricate WG membership.
@@ -110,7 +111,9 @@ class GlossaryTerm:
 
 
 class Vocabulary:
-    """In-memory vocabulary with collision-aware exact term/alias lookup."""
+    """
+    In memory vocabulary with collision aware exact term/alias lookup
+    """
 
     def __init__(self, terms: list[GlossaryTerm]) -> None:
         self.terms = tuple(sorted(terms, key=lambda t: (normalize_term(t.label), t.term_id)))
@@ -131,21 +134,26 @@ class Vocabulary:
         return self._by_id.get(term_id)
 
     def lookup(self, spelling: str) -> tuple[GlossaryTerm, ...]:
-        """Return *all* exact matches; an ambiguous acronym is never guessed."""
+        """
+        Return *all* exact matches; an ambiguous acronym is never guessed
+        """
         return tuple(self._by_id[i] for i in self._index.get(normalize_term(spelling), ()))
 
     @property
     def ambiguous_labels(self) -> dict[str, list[str]]:
-        """Normalized spellings shared by multiple glossary headwords."""
+        """
+        Normalized spellings shared by multiple glossary headwords
+        """
         return {key: list(ids) for key, ids in sorted(self._index.items()) if len(ids) > 1}
 
 
 def parse_glossary_html(html: str) -> Vocabulary:
-    """Parse the *known* TIB glossary HTML export, not arbitrary IPCC pages.
+    """
+    Parse the *known* TIB glossary HTML export, not arbitrary IPCC pages
 
     No claims of WG provenance or aliases are made beyond what's present in
     the source file. Reject changed/unexpected HTML instead of emitting an
-    empty, seemingly successful vocabulary.
+    empty, seemingly successful vocabulary
     """
     soup = BeautifulSoup(html, "html.parser")
     elements = soup.select(".term-list .term")
@@ -162,8 +170,7 @@ def parse_glossary_html(html: str) -> Vocabulary:
         label = _visible_text(label_node)
         if not label:
             raise ValueError(f"Glossary entry {index} has an empty label")
-        # Some glossary headwords genuinely have a blank definition in the
-        # upstream export. Keep the term for lookup instead of losing it.
+        
         definition = _visible_text(definition_node) or None
         key = normalize_term(label)
         if key in seen_labels:
@@ -193,7 +200,9 @@ def parse_glossary_html(html: str) -> Vocabulary:
 
 
 def _read_html(source: str | Path) -> tuple[str, bytes]:
-    """Read a local HTML snapshot or fetch one HTTPS URL with bounded size."""
+    """
+    Read a local HTML snapshot or fetch one HTTPS URL with bounded size
+    """
     source = str(source)
     if source.startswith("https://"):
         with requests.get(
@@ -226,7 +235,8 @@ def build_vocabulary(
     *,
     min_terms: int = 500,
 ) -> dict[str, Any]:
-    """Build a JSON vocabulary from the structured HTML with provenance.
+    """
+    Build a JSON vocabulary from the structured HTML with provenance
 
     The minimum-term safeguard prevents accidentally publishing a tiny partial
     export if the remote HTML layout or source changes unexpectedly.
@@ -265,8 +275,7 @@ def build_vocabulary(
     }
     output = Path(output)
     output.parent.mkdir(parents=True, exist_ok=True)
-    # Never overwrite an existing good file unless the complete new output is
-    # prepared. A malformed source fails before this point.
+   
     pending = output.with_name(output.name + ".tmp")
     try:
         with pending.open("w", encoding="utf-8") as handle:
@@ -279,7 +288,9 @@ def build_vocabulary(
 
 
 def load_vocabulary(path: Path = DEFAULT_OUTPUT) -> Vocabulary:
-    """Load the saved vocabulary for later extraction/normalization modules."""
+    """
+    Load the saved vocabulary for later extraction / normalization modules
+    """
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
     if payload.get("schema_version") != SCHEMA_VERSION:
         raise ValueError("Unsupported vocabulary schema_version")

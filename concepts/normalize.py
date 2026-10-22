@@ -1,26 +1,28 @@
-"""Resolve extracted IPCC caption mentions to source-backed glossary headwords.
+"""
+Normalize IPCC caption mentions using source-backed glossary terms.
 
-This module is deliberately conservative. It maps extractor term IDs to their
-canonical vocabulary labels, preserves every original evidence span, and keeps
-unresolved ambiguous spellings for later review. The only contextual resolution
-allowed is an explicit, adjacent parenthetical expansion in the *same* caption,
-for example ``CO2 (carbon dioxide)``. Mere co-occurrence, working-group labels,
-and guessed scientific synonyms never disambiguate a mention.
+- Map extracted term IDs to canonical glossary labels.
+- Preserve original evidence spans.
+- Keep ambiguous terms unresolved for later review.
+- Resolve ambiguity only using an adjacent parenthetical expansion
+  in the same caption, such as CO2 (carbon dioxide).
+- Do not use co-occurrence, working-group labels, or guessed synonyms.
+- Run after ConceptExtractor and before corpus/database building.
+- Do not access the network, filesystem, modify vocabulary, or write to databases.
+- Lexical matches do not confirm visual depiction or validated ontology relationships.
 
-Use after ``ConceptExtractor`` and before the corpus/database builder::
-
+Usage:
     from concepts.vocabulary import load_vocabulary
     from concepts.extract import ConceptExtractor
 
     vocabulary = load_vocabulary()
     extractor = ConceptExtractor(vocabulary)
     normalizer = ConceptNormalizer(vocabulary)
-    caption = "CO2 (carbon dioxide) contributes to warming."
-    mentions = normalizer.normalize(extractor.extract("figure-1", caption), caption)
 
-No network requests, filesystem access, vocabulary edits, or database writes.
-A resolved *lexical* mention is not a claim that a figure visually depicts the
-concept or that an ontology relationship has been scientifically validated.
+    caption = "CO2 (carbon dioxide) contributes to warming."
+    mentions = normalizer.normalize(
+        extractor.extract("figure-1", caption), caption
+    )
 """
 
 from __future__ import annotations
@@ -43,7 +45,8 @@ _CLOSE_PAREN = re.compile(r"\A\s*\)")
 
 @dataclass(frozen=True, slots=True)
 class NormalizedMention:
-    """A caption mention with an optional canonical glossary term identity.
+    """
+    A caption mention with an optional canonical glossary term identity.
 
     ``term_id`` and ``canonical_label`` are None when unresolved. The original
     caption text and [start, end) offsets are unchanged. ``candidate_term_ids``
@@ -69,7 +72,8 @@ class NormalizedMention:
 
 
 class ConceptNormalizer:
-    """Normalize a caption's lexical matches against one frozen vocabulary.
+    """
+    Normalize a caption's lexical matches against one frozen vocabulary.
 
     A ``Vocabulary`` can be reused across many figures. The input must be a
     single figure's extractor results, not mentions from multiple captions.
@@ -83,7 +87,8 @@ class ConceptNormalizer:
     def normalize(
         self, mentions: Iterable[ConceptMention], caption: str | None
     ) -> tuple[NormalizedMention, ...]:
-        """Return normalized mentions in caption order, without dropping any.
+        """
+        Return normalized mentions in caption order, without dropping any.
 
         Fail closed on invalid evidence, unknown IDs, or inconsistent extractor
         decisions rather than producing fabricated figure-concept associations.
@@ -175,7 +180,9 @@ class ConceptNormalizer:
     def _parenthetical_pair(
         left: ConceptMention, right: ConceptMention, caption: str
     ) -> bool:
-        """Only a directly adjacent, closed parenthesis is expansion evidence."""
+        """
+        Only a directly adjacent, closed parenthesis is expansion evidence
+        """
         return bool(
             _OPEN_PAREN.fullmatch(caption[left.end:right.start])
             and _CLOSE_PAREN.match(caption[right.end:])
@@ -184,7 +191,8 @@ class ConceptNormalizer:
     def _resolve_expansion(
         self, mentions: list[ConceptMention], position: int, caption: str
     ) -> str | None:
-        """Choose a candidate only when the caption explicitly expands it.
+        """
+        Choose a candidate only when the caption explicitly expands it.
 
         The neighboring match must be an unambiguous *full glossary headword*,
         not another short acronym or alias. This supports ``CO2 (carbon dioxide)``

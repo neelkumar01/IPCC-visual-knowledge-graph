@@ -1,20 +1,18 @@
-"""Find glossary-backed scientific concept mentions in IPCC figure captions.
+"""
+Find scientific concept mentions in IPCC figure captions using glossary terms
 
-This is a deterministic *lexical* extractor, not an ontology, semantic parser,
-or assertion that a figure visually depicts a concept. A match means that the
-provided caption contains a whole glossary headword or documented alias.
+- Match whole glossary terms or documented aliases in captions
+- Use deterministic text matching, not semantic or visual analysis
+- Reuse one ConceptExtractor to process multiple captions efficiently
+- Return no mentions for missing captions
+- Report match positions in the original caption (start inclusive, end exclusive)
+- Do not access the network, read/write corpus files, use NLP models, or update databases
 
-Use one ConceptExtractor for many captions to reuse its compiled vocabulary:
-
+Usage:
     from concepts.vocabulary import load_vocabulary
     from concepts.extract import ConceptExtractor
-
     extractor = ConceptExtractor(load_vocabulary())
     mentions = extractor.extract("AR6-WG1-example", "AMOC influences climate.")
-
-No network, corpus I/O, NLP model, or database write occurs in this module.
-Missing captions yield no mentions. All evidence offsets refer to the original
-Python caption string (start inclusive, end exclusive).
 """
 
 from __future__ import annotations
@@ -28,9 +26,7 @@ from concepts.vocabulary import Vocabulary, normalize_term
 
 MatchKind = Literal["label", "alias", "mixed"]
 _DASHES = str.maketrans({"‐": "-", "‑": "-", "‒": "-", "–": "-", "—": "-", "−": "-"})
-# In scraped IPCC captions, lost subscripts often appear as spaces: "CO 2".
-# Only these known chemical formulas receive formatting variants. No generic
-# space removal, stemming, or equivalence of scientific concepts is attempted.
+
 _SPACED_FORMULAS = {
     "CO2": ("CO 2",),
     "CH4": ("CH 4",),
@@ -42,7 +38,8 @@ _SPACED_FORMULAS = {
 
 @dataclass(frozen=True, slots=True)
 class ConceptMention:
-    """An exact caption span and its candidate glossary term IDs.
+    """
+    An exact caption span and its candidate glossary term IDs
 
     ``term_id`` is None when more than one glossary concept shares the matched
     spelling; ``candidate_term_ids`` contains every possible concept in that
@@ -66,19 +63,17 @@ class ConceptMention:
 @dataclass(slots=True)
 class _TrieNode:
     children: dict[str, _TrieNode] = field(default_factory=dict)
-    # Normalized spellings are keys in ConceptExtractor._spellings.
     terminal: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
 class _Spelling:
-    # Short case-sensitive spellings can share a normalized key with other
-    # spellings, so keep every source variant for evidence-level filtering.
     variants: tuple[tuple[str, str, MatchKind], ...]
 
 
 def _normalized_caption(text: str) -> tuple[str, list[int], list[int]]:
-    """Normalize for lookup while retaining offsets into the *original* text.
+    """
+    Normalize for lookup while retaining offsets into the *original* text.
 
     NFKC can expand characters (CO₂ -> CO2, ﬁ -> fi), and whitespace can
     collapse; a plain normalized-string index is therefore not evidence.
@@ -113,7 +108,9 @@ def _word_character(char: str) -> bool:
 
 
 def _valid_boundaries(text: str, start: int, end: int) -> bool:
-    """Reject matches embedded in words, IDs, longer numbers, or decimals."""
+    """
+    Reject matches embedded in words, IDs, longer numbers, or decimals
+    """
     if start and _word_character(text[start - 1]) and _word_character(text[start]):
         return False
     if end < len(text) and _word_character(text[end - 1]) and _word_character(text[end]):
@@ -129,7 +126,8 @@ def _valid_boundaries(text: str, start: int, end: int) -> bool:
 
 
 def _requires_exact_case(spelling: str) -> bool:
-    """Keep very short, case-sensitive scientific symbols/acronyms precise.
+    """
+    Keep very short, case-sensitive scientific symbols/acronyms precise.
 
     E.g., do not treat ordinary lowercase 're' as Renewable Energy ('RE').
     Longer headwords use the vocabulary's case-insensitive normalizer.
@@ -138,12 +136,15 @@ def _requires_exact_case(spelling: str) -> bool:
 
 
 def _normalized_case(text: str) -> str:
-    """Typography-insensitive *but case-preserving* comparison."""
+    """
+    Typography-insensitive *but case preserving* comparison
+    """
     return " ".join(unicodedata.normalize("NFKC", text).translate(_DASHES).split())
 
 
 class ConceptExtractor:
-    """Reusable leftmost-longest glossary matcher with ambiguity protection.
+    """
+    Reusable leftmost longest glossary matcher with ambiguity protection.
 
     All headwords and explicit aliases are eligible, with narrowly defined
     chemical-formula typography variants, independent of source WG tags:
@@ -181,7 +182,9 @@ class ConceptExtractor:
     def _candidate(
         self, key: str, original: str
     ) -> tuple[tuple[str, ...], MatchKind] | None:
-        """Filter spelling variants before deciding whether a match is ambiguous."""
+        """
+        Filter spelling variants before deciding whether a match is ambiguous
+        """
         entry = self._spellings[key]
         valid: list[tuple[str, MatchKind]] = []
         for spelling, term_id, kind in entry.variants:
@@ -195,7 +198,8 @@ class ConceptExtractor:
         return ids, kind
 
     def extract(self, figure_id: str, caption: str | None) -> tuple[ConceptMention, ...]:
-        """Return ordered non-overlapping lexical mentions from one caption.
+        """
+        Return ordered non-overlapping lexical mentions from one caption.
 
         Repeated occurrences are preserved. An ambiguous spelling produces
         exactly one mention with *all* candidate IDs and no selected term ID.

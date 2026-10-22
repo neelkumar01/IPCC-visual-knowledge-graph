@@ -1,12 +1,17 @@
-"""Build the validated IPCC AR6 figure corpus from the three raw WG exports.
+"""
+Build the validated IPCC AR6 figure corpus from three raw WG JSON files
 
-Run from the repository root:
+- Load and clean records using corpus.schemas and corpus.clean
+- Store the cleaned data in SQLite
+- Generate a data quality report
+- Keep the original input JSON files unchanged
+- Do not scrape IPCC, generate captions or check image URL availability
+
+Usage:
     python -m corpus.build_corpus
 
-Requires ``corpus.schemas`` and ``corpus.clean`` (Pydantic 2.x).
-The input JSON files are never modified. This module only orchestrates
-loading, cleaning, SQLite persistence, and a quality report. It does not
-scrape IPCC, invent captions, or verify that image URLs are reachable.
+Requires:
+    corpus.schemas, corpus.clean and Pydantic 2.x
 """
 
 from __future__ import annotations
@@ -72,7 +77,9 @@ INSERT INTO figures (
 
 
 def _read_raw_figures(raw_dir: Path) -> tuple[list[dict[str, Any]], dict[str, int]]:
-    """Load *all* three WG exports; never silently omit a missing input file."""
+    """
+    Load *all* three WG exports & never silently omit a missing input file
+    """
     records: list[dict[str, Any]] = []
     counts: dict[str, int] = {}
 
@@ -126,7 +133,9 @@ def _figure_row(figure: CleanFigure) -> tuple[str | None, ...]:
 
 
 def _write_database(path: Path, figures: tuple[CleanFigure, ...]) -> None:
-    """Create a self-contained relational database in a new temporary file."""
+    """
+    Create a self contained relational database in a new temporary file
+    """
     ordered = sorted(figures, key=lambda item: (item.working_group, item.figure_id))
 
     with closing(sqlite3.connect(path)) as connection:
@@ -136,7 +145,7 @@ def _write_database(path: Path, figures: tuple[CleanFigure, ...]) -> None:
         connection.executescript(_CREATE_TABLES)
         connection.execute(f"PRAGMA user_version = {DATABASE_SCHEMA_VERSION}")
 
-        with connection:  # One transaction for figures and their image references.
+        with connection:  
             connection.executemany(_INSERT_FIGURE, (_figure_row(f) for f in ordered))
             connection.executemany(
                 "INSERT INTO figure_images (figure_id, position, image_url) "
@@ -162,7 +171,9 @@ def _write_database(path: Path, figures: tuple[CleanFigure, ...]) -> None:
 def _quality_report(
     result: CleaningResult, input_counts: dict[str, int]
 ) -> dict[str, Any]:
-    """Create source-traceable, JSON-serializable figures and issue counts."""
+    """
+    Create source traceable, JSON serializable figures and issue counts
+    """
     figures_by_wg = Counter(f.working_group for f in result.figures)
     missing_captions = Counter(
         f.working_group for f in result.figures if f.caption_status == "missing"
@@ -216,11 +227,8 @@ def build_corpus(
     database_path: Path = PROJECT_ROOT / "data" / "processed" / "corpus.db",
     report_path: Path = PROJECT_ROOT / "reports" / "corpus_quality.json",
 ) -> dict[str, Any]:
-    """Validate all WG files, clean records, and safely rebuild database/report.
-
-    Schema-invalid records or conflicting duplicates abort the build: an
-    incomplete corpus must never silently replace the previous good database.
-    Identical duplicate records are kept once and documented in the report.
+    """
+    Validate all WG files, clean records and safely rebuild database / report
     """
     raw_dir = Path(raw_dir)
     database_path = Path(database_path)
@@ -243,8 +251,6 @@ def build_corpus(
     database_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Prepare both artifacts before replacing either published output. Temporary
-    # directories share their respective destination filesystems for os.replace.
     with tempfile.TemporaryDirectory(prefix=".corpus-build-", dir=database_path.parent) as db_tmp:
         with tempfile.TemporaryDirectory(prefix=".corpus-report-", dir=report_path.parent) as report_tmp:
             pending_db = Path(db_tmp) / "corpus.db"

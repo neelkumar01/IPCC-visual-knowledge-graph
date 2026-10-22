@@ -1,11 +1,14 @@
-"""Validated figure record for the IPCC AR6 visual corpus.
+"""
+Validate figure records collected from IPCC AR6 Working Groups I, II and III
 
-This schema matches the Phase 1 JSON files (``data/raw/wg{1,2,3}.json``).
-It checks record structure and provenance, but deliberately does not clean data,
-fetch URLs, infer captions, or decide whether an image is a real figure.
-Those tasks belong to the Phase 2 cleaning and corpus-building modules.
+- Defines the schema for Phase 1 raw JSON files (data/raw/wg{1,2,3}.json)
+- Checks record structure and source information
+- Does not clean data, fetch URLs, or generate missing captions
+- Does not verify whether an image is an actual figure
+- Leaves data cleaning and corpus building for Phase 2
 
-Requires Pydantic 2.x.
+Requires:
+    Pydantic 2.x
 """
 
 from __future__ import annotations
@@ -21,10 +24,12 @@ WorkingGroup = Literal["WG1", "WG2", "WG3"]
 
 
 class FigureRecord(BaseModel):
-    """One figure as collected from an official IPCC AR6 figure page.
+    """
+    Represent a figure collected from an official IPCC AR6 page
 
-    Optional fields reflect the real corpus: some published pages have no
-    caption, while summary/annex figures may not have a chapter or title.
+    - Store the figure's available metadata
+    - Allow missing captions, chapters or titles
+    - Keep optional fields for figures with incomplete information
     """
 
     model_config = ConfigDict(extra="forbid", strict=True)
@@ -75,7 +80,7 @@ class FigureRecord(BaseModel):
             raise ValueError("Expected an ISO 8601 timestamp") from exc
         if parsed.tzinfo is None or parsed.utcoffset() is None:
             raise ValueError("Timestamp must include a timezone")
-        return value  # Keep the collector's original representation.
+        return value 
 
     @model_validator(mode="after")
     def validate_provenance(self) -> FigureRecord:
@@ -87,8 +92,6 @@ class FigureRecord(BaseModel):
         if self.source_url == root:
             raise ValueError("source_url must identify a figure, not the collection root")
 
-        # Figure IDs are source-path-based in the Phase 1 collector, rather than
-        # label-based (labels can repeat in boxes, annexes and FAQs).
         relative_path = urlsplit(self.source_url).path.removeprefix(urlsplit(root).path)
         segments = [segment for segment in relative_path.split("/") if segment]
         expected_id = f"AR6-{self.working_group}-" + "--".join(segments)
@@ -100,5 +103,7 @@ class FigureRecord(BaseModel):
 
     @property
     def has_caption(self) -> bool:
-        """Whether caption text is available for downstream concept extraction."""
+        """
+        Whether caption text is available for downstream concept extraction
+        """
         return bool(self.caption and self.caption.strip())

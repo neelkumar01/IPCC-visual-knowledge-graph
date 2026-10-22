@@ -1,19 +1,16 @@
-"""Collect IPCC AR6 figure metadata and captions from Working Groups I–III.
+"""
+Collect figure metadata and captions from IPCC AR6 Working Groups I, II and III
 
-This is Phase 1's *raw collector*, not the cleaning/ontology pipeline.
-It discovers linked figure-detail pages, stores source URLs rather than image
-binaries, checkpoints progress, and reports errors and missing fields.
+Installation:
+    pip install requests beautifulsoup4
 
-Install:
-    python -m pip install requests beautifulsoup4
-
-Run from the repository root:
+Usage:
     python -m collector.collect_figures
-    python -m collector.collect_figures --wg wg1 --max-pages 25
     python -m collector.collect_figures --retry-failed
 
-Respect IPCC's robots.txt and copyright policy. Collected full captions are
-for local research; check reuse terms before committing or republishing them.
+Note:
+    Respect IPCC's robots.txt and copyright policies.
+    Captions are collected for local research purposes.
 """
 
 from __future__ import annotations
@@ -59,20 +56,26 @@ MAX_HTML_BYTES = 8_000_000
 
 
 def utc_timestamp() -> str:
-    """UTC ISO 8601 timestamp for provenance and reports."""
+    """
+    UTC ISO 8601 timestamp for provenance and reports
+    """
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 def compact_text(value: str) -> str:
-    """Normalize whitespace (including non-breaking spaces) without paraphrasing."""
+    """
+    Normalize whitespace (including non breaking spaces) without paraphrasing
+    """
     return re.sub(r"\s+", " ", value.replace("\u00a0", " ")).strip()
 
 
 def normalize_url(href: str, base: str) -> str | None:
-    """Resolve a link and reject non-IPCC hosts and non-HTTP protocols.
+    """
+    Convert a link into a valid IPCC URL
 
-    Paths are case-preserved: different published URLs may have different case.
-    Queries/fragments are discarded to avoid tracking and duplicate navigation.
+    - Allow only HTTP/HTTPS links from IPCC websites
+    - Keep the original capitalization of URL paths
+    - Remove query parameters and fragments to avoid duplicate URLs
     """
     if not href or href.strip().startswith(("#", "mailto:", "javascript:", "tel:")):
         return None
@@ -83,22 +86,24 @@ def normalize_url(href: str, base: str) -> str | None:
     path = re.sub(r"/{2,}", "/", parsed.path)
     if not path:
         path = "/"
-    # A dot in an IPCC figure slug is not necessarily a file extension.
     if Path(path).suffix.lower() not in SKIP_SUFFIXES | {".html", ".htm"} and not path.endswith("/"):
         path += "/"
-    # Collapse both IPCC host variants to one identity; force HTTPS.
     return urlunsplit(("https", "www.ipcc.ch", path, "", ""))
 
 
 def is_html_in_scope(url: str, wg: str) -> bool:
-    """Only follow figure collection pages of this WG, never arbitrary IPCC links."""
+    """
+    Only follow figure collection pages of this WG, never arbitrary IPCC links
+    """
     root = WG_ROOTS[wg]
     path = urlsplit(url).path.lower()
     return url.startswith(root) and Path(path.rstrip("/")).suffix.lower() not in SKIP_SUFFIXES
 
 
 def discover_links(soup: BeautifulSoup, source_url: str, wg: str) -> list[str]:
-    """Find detail pages, chapter indexes, SPM/TS/Atlas and other linked sections."""
+    """
+    Find detail pages, chapter indexes, SPM / TS / Atlas and other linked sections
+    """
     found: list[str] = []
     seen: set[str] = set()
     for link in soup.select("a[href]"):
@@ -110,7 +115,9 @@ def discover_links(soup: BeautifulSoup, source_url: str, wg: str) -> list[str]:
 
 
 def caption_heading(soup: BeautifulSoup) -> Tag | None:
-    """Locate a figure-detail page's explicit caption section."""
+    """
+    Locate a figure detail page's explicit caption section
+    """
     for heading in soup.find_all(("h2", "h3", "h4", "h5", "h6")):
         if CAPTION_HEADING.match(compact_text(heading.get_text(" ", strip=True))):
             return heading
@@ -118,10 +125,12 @@ def caption_heading(soup: BeautifulSoup) -> Tag | None:
 
 
 def _caption_from_siblings(node: Tag) -> tuple[str, str]:
-    """Read the caption section, stopping before unrelated subsequent sections.
+    """
+    Extract the figure caption without including unrelated content
 
-    Keep the original inline markup alongside plaintext for math/subscript fidelity.
-    Never follow scripts, navigation or styling content into the caption.
+    - Stop when the caption section ends
+    - Preserve both HTML formatting and plain text for math and subscripts
+    - Ignore scripts, navigation, and styling elements
     """
     text_chunks: list[str] = []
     html_chunks: list[str] = []
@@ -143,7 +152,6 @@ def _caption_from_siblings(node: Tag) -> tuple[str, str]:
         value = compact_text(sibling.get_text(" ", strip=True))
         if not value:
             continue
-        # A caption can comprise several paragraphs, including notes/sources.
         text_chunks.append(value)
         html_chunks.append(str(sibling))
         if sum(map(len, text_chunks)) > 100_000:
@@ -153,10 +161,13 @@ def _caption_from_siblings(node: Tag) -> tuple[str, str]:
 
 
 def extract_caption(soup: BeautifulSoup) -> tuple[str | None, str | None]:
-    """Return plaintext and original caption HTML, or (None, None).
+    """
+    Extract the figure caption as plain text and HTML
 
-    Tries the heading's immediate siblings, then its container's siblings,
-    followed by figure-page caption/figcaption elements as fallbacks.
+    - First, check elements immediately after the caption heading
+    - If not found, check elements after its parent container
+    - Finally, look for caption or figcaption elements
+    - Return (None, None) if no caption is found
     """
     heading = caption_heading(soup)
     if heading:
@@ -181,11 +192,14 @@ def _media_link(url: str) -> bool:
 
 
 def extract_image_urls(soup: BeautifulSoup, source_url: str) -> list[str]:
-    """Identify direct figure image files without downloading or guessing names.
+    """
+    Find direct URLs to figure images without downloading them
 
-    The IPCC figure pages use downloadable image links, while some responsive
-    pages additionally store the displayed image in data-src/data-srcset.
-    Only figure-specific images are accepted; no generic og:image/logo fallback.
+    - Check image download links on IPCC figure pages
+    - Look for images stored in data-src or data-srcset
+    - Accept only images related to the specific figure
+    - Ignore generic images, logos, and unrelated thumbnails
+    - Never guess image filenames or URLs
     """
     ranked: list[tuple[int, str]] = []
     for a in soup.select("a[href]"):
@@ -223,21 +237,20 @@ def extract_image_urls(soup: BeautifulSoup, source_url: str) -> list[str]:
                     if url and _media_link(url):
                         ranked.append((2, url))
 
-    # First occurrence of a URL wins, preferring full-resolution downloads.
     ranked.sort(key=lambda entry: entry[0])
     return list(dict.fromkeys(url for _, url in ranked))
 
 
 def parse_figure_page(soup: BeautifulSoup, url: str, wg: str) -> dict[str, Any] | None:
-    """Extract one figure-page record, or None for section/navigation pages."""
+    """
+    Extract one figure page record or None for section / navigation pages
+    """
     heading = soup.find("h1")
     label = compact_text(heading.get_text(" ", strip=True)) if heading else ""
     section_heading = label.lower().startswith(("figures:", "all figures"))
     has_caption_heading = caption_heading(soup) is not None
     is_detail_label = bool(FIGURE_LABEL.match(label)) and not section_heading
 
-    # Require strong evidence of an individual figure page; don't mistake
-    # a chapter index containing multiple figure thumbnails for a detail page.
     if not has_caption_heading and not is_detail_label:
         return None
     if not has_caption_heading and not extract_image_urls(soup, url):
@@ -250,16 +263,12 @@ def parse_figure_page(soup: BeautifulSoup, url: str, wg: str) -> dict[str, Any] 
     chapter = next((s for s in segments if CHAPTER_SLUG.match(s)), None)
     section = "/".join(segments[:-1]) or "root"
 
-    # URL identity avoids collisions: WGIII has distinct figure pages with the
-    # same displayed 'Figure 6.1' label; FAQs/boxes also reuse numbers.
     figure_id = f"AR6-{wg.upper()}-" + "--".join(segments)
     return {
         "schema_version": SCHEMA_VERSION,
         "figure_id": figure_id,
         "working_group": wg.upper(),
         "figure_label": label or None,
-        # Most detail pages do not provide a distinct title beyond the caption.
-        # Never fabricate one from an arbitrary substring of scientific text.
         "title": None,
         "chapter": chapter,
         "section": section,
@@ -275,7 +284,9 @@ def parse_figure_page(soup: BeautifulSoup, url: str, wg: str) -> dict[str, Any] 
 
 
 def atomic_json(path: Path, obj: Any) -> None:
-    """Replace JSON atomically so an interrupted run cannot corrupt a checkpoint."""
+    """
+    Replace JSON atomically so an interrupted run cannot corrupt a checkpoint
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(path.name + ".tmp")
     with tmp.open("w", encoding="utf-8") as handle:
@@ -305,7 +316,9 @@ class Options:
 
 
 class IPCCClient:
-    """Polite, bounded HTTP client; respects robots.txt by default."""
+    """
+    Polite, bounded HTTP client & respects robots.txt by default
+    """
 
     def __init__(self, options: Options) -> None:
         self.options = options
@@ -355,8 +368,6 @@ class IPCCClient:
                 chunks.extend(chunk)
                 if len(chunks) > MAX_HTML_BYTES:
                     raise ValueError(f"Response exceeds {MAX_HTML_BYTES} bytes: {url}")
-            # Requests may default to ISO-8859-1 when HTML lacks a charset;
-            # IPCC HTML is normally UTF-8. Honour explicitly declared charsets.
             declared = re.search(r"charset\s*=\s*['\"]?([\w.-]+)", content_type)
             encoding = declared.group(1) if declared else "utf-8-sig"
             return bytes(chunks).decode(encoding, errors="replace")
@@ -393,7 +404,9 @@ class IPCCClient:
 
 
 class FigureCollector:
-    """Breadth-first crawl of WG figure directories with resumable checkpoints."""
+    """
+    Breadth first crawl of WG figure directories with resumable checkpoints
+    """
 
     def __init__(self, client: IPCCClient, options: Options) -> None:
         self.client = client
@@ -422,7 +435,7 @@ class FigureCollector:
         if self.options.retry_failed:
             pending.extend(url for url in failures if url not in visited)
             failures.clear()
-        # Re-queue root if only raw records exist (no crawl checkpoint).
+        
         if not saved:
             pending = deque([WG_ROOTS[wg]])
         return pending, visited, figures, failures
