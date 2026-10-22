@@ -107,3 +107,24 @@ Data properties store information about individual nodes.
 | `matchKind` | How the term was matched |
 | `resolution` | Whether the match was accepted, ambiguous, or excluded |
 | `qualityRule` | Rule used to assess the match |
+
+<br>
+
+### Curated Topic Collections
+
+The ontology organizes scientific concepts into **8 manually curated topic groups** using SKOS. These groups make it easier to explore related concepts in the knowledge graph.
+
+| Topic Collection | What It Covers |
+|---|---|
+| **Climate system and processes** | How Earth's climate system works |
+| **Climate drivers and radiative forcing** | Factors that influence Earth's energy balance |
+| **Climate change and extremes** | Climate changes and extreme weather events |
+| **Climate impacts and risk** | Effects of climate change and related risks |
+| **Adaptation and resilience** | Ways to adjust to climate change and manage its impacts |
+| **Mitigation and emissions** | Greenhouse gas emissions and ways to reduce them |
+| **Policy, governance and development** | Climate policies, decision-making, and sustainable development |
+| **Models, methods and evidence** | Scientific models, research methods, and climate evidence |
+
+**Coverage:** 115 of the 920 scientific concepts are assigned to these collections, with 116 total memberships (a concept can belong to more than one group).
+
+*Note: These are project-defined topic groups, not official IPCC classifications.*
