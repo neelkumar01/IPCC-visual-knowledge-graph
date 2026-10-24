@@ -315,124 +315,206 @@ _HTML_DOCUMENT = r'''<!doctype html>
 <title>IPCC Knowledge Graph — __IPCC_TITLE__</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400..900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400..800&display=swap" rel="stylesheet">
 <style>
-:root {color-scheme:light; font-family:'Nunito',ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
- --ink:#202d3e;--muted:#65748a;--line:#dce5ee;--surface:#fff;--base:#f7f9fc;
- --focus:#1d70c8;--concept:#168368;--figure:#317cc4;--section:#b87928;
- --mention:#8b6db2;--image:#29858b;--topic:#ac764d;--report:#7b8295}
+/* ---------- Design tokens: clean white theme ---------- */
+:root {
+ color-scheme:light;
+ font-family:'Nunito',ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+ font-variant-numeric:tabular-nums;
+ --ink:#1a2530; --ink-2:#4a5866; --muted:#7a8794;
+ --surface:#ffffff; --raised:#f7f9fb; --canvas:#ffffff;
+ --line:#e3e8ed; --line-soft:#eef2f5;
+ --accent:#2563a8; --accent-soft:#eef4fb;
+ --ok:#1f8a6e; --ok-soft:#eef8f4; --warn:#b26b12; --warn-soft:#fdf6ec;
+ --edge:#b4bfca; --edge-caption:#5fb09a; --edge-candidate:#d9a650; --edge-evidence:#a493cf;
+ --edge-report:#b4bfca; --edge-image:#6fb8bd; --edge-glossary:#b39ad6; --edge-topic:#cfa27f;
+ --label:#1f2b36;
+ --t-concept:#effaf6; --t-figure:#f0f6fd; --t-mention:#f6f3fb; --t-image:#eef9f9;
+ --t-section:#fdf7ee; --t-wg:#f6f2fb; --t-report:#f4f5f7; --t-topic:#fbf4ef;
+ --shadow:0 1px 2px rgba(26,37,48,.04),0 4px 14px rgba(26,37,48,.06);
+ --font-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+
+/* ---------- Base & page frame ---------- */
 * {box-sizing:border-box}
-html,body {margin:0;width:100%;height:100%;color:var(--ink);background:var(--base)}
-button,input,select {font:inherit}
-button,select,input {outline-offset:3px}
-button:focus-visible,input:focus-visible,select:focus-visible {outline:2px solid var(--focus)}
-button {cursor:pointer;border:1px solid var(--line);color:var(--ink);background:var(--surface);
- border-radius:9px;padding:8px 11px;font-size:12px;font-weight:550}
-button:hover {background:#eef5fb;border-color:#b8cfdf}
+html,body {margin:0;width:100%;height:100%;color:var(--ink);background:var(--surface)}
+body {display:grid;grid-template-rows:auto minmax(0,1fr) auto;height:100vh;height:100dvh;
+ font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select {font:inherit;color:inherit}
+:focus-visible {outline:2px solid var(--accent);outline-offset:2px}
+button {cursor:pointer;border:1px solid var(--line);background:var(--surface);
+ border-radius:8px;padding:7px 11px;font-size:12.5px;font-weight:550;line-height:1.3;
+ transition:background-color .12s,border-color .12s,color .12s}
+button:hover {background:var(--raised);border-color:#c9d2db}
 button:disabled {opacity:.45;cursor:not-allowed}
-header {display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-height:69px;padding:13px 18px;
- background:var(--surface);border-bottom:1px solid var(--line)}
-.identity {min-width:178px;margin-right:auto}
-.identity strong {font-size:15px;letter-spacing:-.015em}
-.identity div {color:var(--muted);font-size:11px;margin-top:3px}
-.searchwrap {position:relative;flex:1;min-width:160px;max-width:370px}
-#search {width:100%;height:36px;border:1px solid var(--line);border-radius:12px;
- background:#ffffff;padding:8px 12px 8px 33px;color:#1e293b;font-size:13px}
-.searchwrap .glass {position:absolute;top:50%;left:12px;transform:translateY(-50%);
- display:flex;align-items:center;justify-content:center;color:#1e293b;pointer-events:none}
-#search:focus {outline:none;border-color:var(--line);box-shadow:none}
-#search:focus-visible {outline:2px solid #ffffff}
-#matches {display:none;position:absolute;z-index:12;top:41px;left:0;right:0;background:white;
- border:1px solid var(--line);box-shadow:0 12px 35px #26385025;border-radius:10px;max-height:235px;overflow:auto}
-#matches button {width:100%;border:0;border-radius:0;text-align:left;padding:10px 12px;display:block}
-#matches button + button {border-top:1px solid #edf1f5}
-#matches small {display:block;color:var(--muted);font-weight:400;margin-top:3px}
+.muted {color:var(--muted)}
+
+/* ---------- Header ---------- */
+header {position:relative;display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+ padding:14px 24px;background:var(--surface);border-bottom:1px solid var(--line)}
+.identity {min-width:200px;margin-right:auto}
+.identity strong {display:block;font-size:17px;font-weight:800;letter-spacing:-.01em;line-height:1.2}
+.identity div {color:var(--muted);font-size:12.5px;margin-top:3px}
+.searchwrap {position:relative;flex:1;min-width:180px;max-width:380px}
+#search {width:100%;height:38px;border:1px solid var(--line);border-radius:10px;
+ background:var(--surface);padding:8px 12px 8px 36px;font-size:13.5px;
+ transition:border-color .12s,background-color .12s,box-shadow .12s}
+#search::placeholder {color:var(--muted);opacity:1}
+#search:hover {border-color:#c9d2db}
+#search:focus {outline:none;background:var(--surface);border-color:var(--accent);
+ box-shadow:0 0 0 3px var(--accent-soft)}
+.searchwrap .glass {position:absolute;top:50%;left:13px;transform:translateY(-50%);
+ display:flex;color:var(--muted);pointer-events:none}
+#matches {display:none;position:absolute;z-index:12;top:44px;left:0;right:0;background:var(--surface);
+ border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px;max-height:260px;overflow:auto;padding:4px}
+#matches button {width:100%;border:0;border-radius:7px;text-align:left;padding:8px 10px;display:block;
+ background:transparent;font-size:13px}
+#matches button:hover,#matches button:focus-visible {background:var(--accent-soft)}
+#matches small {display:block;color:var(--muted);font-weight:400;font-size:11.5px;margin-top:1px}
+#matches small::first-letter {text-transform:uppercase}
 .filters {display:flex;gap:8px;align-items:center}
-#relation-filter {height:36px;max-width:168px;border:1px solid var(--line);border-radius:9px;
- color:var(--ink);background:white;padding:0 8px;font-size:12px}
-.app {display:grid;grid-template-columns:minmax(0,1fr) 335px;height:calc(100vh - 111px);min-height:420px}
-.canvas-wrap {position:relative;min-width:0;overflow:hidden;background:#fbfcfe;
- background-image:radial-gradient(#dbe3ed 0.7px,transparent 0.7px);background-size:21px 21px}
+.filters label {font-size:12.5px;color:var(--muted)!important}
+#relation-filter {height:38px;max-width:190px;border:1px solid var(--line);border-radius:10px;
+ background:var(--surface);padding:0 10px;font-size:13px;cursor:pointer}
+#relation-filter:hover {border-color:#c9d2db}
+
+/* ---------- Main layout ---------- */
+.app {display:grid;grid-template-columns:minmax(0,1fr) 360px;min-height:0;height:auto}
+
+.canvas-wrap {position:relative;min-width:0;min-height:0;overflow:hidden;background:var(--canvas)}
 #network {width:100%;height:100%;display:block;touch-action:none;user-select:none;cursor:grab}
 #network.panning {cursor:grabbing}
-.graph-edge {stroke:#9bacc0;stroke-width:1.5;fill:none;pointer-events:stroke;cursor:pointer}
-.graph-edge[data-family="caption"] {stroke:#90bbaa;stroke-width:2}
-.graph-edge[data-family="candidate"] {stroke:#cda56b;stroke-dasharray:5 5}
-.graph-edge[data-family="evidence"] {stroke:#b7a6cf;stroke-dasharray:3 4}
-.graph-edge.selected {stroke:#175bab;stroke-width:3;stroke-dasharray:none}
-.graph-edge.dimmed,.graph-node.dimmed {opacity:.13}
-.graph-node {cursor:grab;outline:none}
+#network:focus-visible {outline-offset:-3px}
+
+
+/* Edges: each relationship type has its own colour and matching arrowhead */
+.graph-edge {stroke:var(--edge);stroke-width:1.3;fill:none;stroke-linecap:round;
+ pointer-events:stroke;cursor:pointer;transition:opacity .15s,stroke-width .12s}
+.graph-edge[data-family="caption"] {stroke:var(--edge-caption);stroke-width:1.7;marker-end:url(#arrow-caption)}
+.graph-edge[data-family="report"] {stroke:var(--edge-report)}
+.graph-edge[data-family="image"] {stroke:var(--edge-image);marker-end:url(#arrow-image)}
+.graph-edge[data-family="evidence"] {stroke:var(--edge-evidence);stroke-dasharray:2 4;marker-end:url(#arrow-evidence)}
+.graph-edge[data-family="candidate"] {stroke:var(--edge-candidate);stroke-dasharray:5 4;marker-end:url(#arrow-candidate)}
+.graph-edge[data-family="glossary"] {stroke:var(--edge-glossary);marker-end:url(#arrow-glossary)}
+.graph-edge[data-family="topic"] {stroke:var(--edge-topic);marker-end:url(#arrow-topic)}
+.graph-edge:hover {stroke:var(--accent);stroke-width:2.6;marker-end:url(#arrow-active)}
+.graph-edge:focus-visible {outline:none;stroke:var(--accent);stroke-width:2.8;marker-end:url(#arrow-active)}
+.graph-edge.selected {stroke:var(--accent);stroke-width:3;stroke-dasharray:none;marker-end:url(#arrow-active)}
+
+/* Nodes: opaque tinted discs with the kind colour as ring (ring colour comes from the
+   existing script, so kinds stay consistent with the inspector). Context nodes are lighter;
+   caption evidence uses a dashed ring. */
+.graph-node {cursor:grab;outline:none;transition:opacity .15s}
 .graph-node.dragging {cursor:grabbing}
-.graph-node circle {stroke-width:2;transition:stroke-width .12s}
-.graph-node text {font-family:inherit;fill:#23344a;font-size:15px;font-weight:700;text-anchor:middle;
- pointer-events:none;paint-order:stroke;stroke:#fff;stroke-width:2px;stroke-linejoin:round}
-.graph-node.secondary text {font-size:14px;font-weight:700}
-.graph-node:focus-visible {filter:drop-shadow(0 0 4px #3080bb88)}
-.canvas-tools {position:absolute;right:17px;bottom:17px;display:flex;flex-direction:column;gap:6px}
-.canvas-tools button {font-size:15px;width:36px;height:36px;padding:0;display:grid;place-items:center;border-radius:15px;box-shadow:0 2px 10px #1e293b10}
-.canvas-tools button:hover,.canvas-tools button:active {background:#ec4863;border-color:#ec4863;color:#ffffff}
-.canvas-tools button:hover svg,.canvas-tools button:active svg {stroke:#ffffff}
-.metrics {position:absolute;left:17px;top:14px;color:#61728b;font-size:11px;
- background:#ffffffdb;padding:7px 10px;border:1px solid #e8edf3;border-radius:8px}
-#empty {display:none;position:absolute;top:43%;left:50%;transform:translate(-50%,-50%);
- text-align:center;color:var(--muted);width:min(300px,90%);line-height:1.5}
+.graph-node circle {fill:var(--surface);fill-opacity:1;stroke-width:1.6;
+ transition:stroke-width .12s,filter .12s}
+.graph-node[aria-label^="concept:"] circle {fill:var(--t-concept);stroke-width:2}
+.graph-node[aria-label^="figure:"] circle {fill:var(--t-figure);stroke-width:2}
+.graph-node[aria-label^="mention:"] circle {fill:var(--t-mention);stroke-dasharray:4 3}
+.graph-node[aria-label^="image:"] circle {fill:var(--t-image)}
+.graph-node[aria-label^="section:"] circle {fill:var(--t-section)}
+.graph-node[aria-label^="working group:"] circle {fill:var(--t-wg)}
+.graph-node[aria-label^="report:"] circle {fill:var(--t-report)}
+.graph-node[aria-label^="topic:"] circle {fill:var(--t-topic)}
+.graph-node:hover circle {stroke-width:3;filter:drop-shadow(0 2px 8px rgba(26,37,48,.12))}
+.graph-node.selected circle {stroke-width:3.5;filter:drop-shadow(0 4px 14px rgba(26,37,48,.18))}
+.graph-node:focus-visible circle {stroke-width:4.5;stroke-dasharray:none}
+.graph-edge.dimmed,.graph-node.dimmed {opacity:.18}
+
+/* Slightly condensed labels so they fit inside their disc */
+.graph-node text {font-family:inherit;fill:var(--label);font-size:10.3px;font-weight:750;letter-spacing:-.01em;
+ text-anchor:middle;pointer-events:none;stroke:none;letter-spacing:0}
+.graph-node.secondary text {font-size:9.6px;font-weight:650;fill:var(--ink-2)}
+.graph-node.selected text {font-weight:800}
+
+/* Canvas overlays */
+.metrics {position:absolute;left:16px;top:14px;color:var(--ink-2);font-size:12px;
+ background:var(--surface);padding:6px 11px;border:1px solid var(--line);border-radius:999px;
+ box-shadow:var(--shadow)}
+.canvas-tools {position:absolute;right:16px;bottom:16px;display:flex;flex-direction:column;
+ background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);overflow:hidden}
+.canvas-tools button {width:40px;height:40px;padding:0;display:grid;place-items:center;
+ border:0;border-radius:0;background:transparent;color:var(--ink-2)}
+.canvas-tools button + button {border-top:1px solid var(--line-soft)}
+.canvas-tools button:hover {background:var(--accent-soft);color:var(--accent)}
+.canvas-tools button:active {background:var(--accent);color:#fff}
+.canvas-tools button:focus-visible {outline-offset:-3px}
+#empty {display:none;position:absolute;top:45%;left:50%;transform:translate(-50%,-50%);
+ text-align:center;color:var(--ink-2);width:min(320px,90%);line-height:1.55;
+ background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px;box-shadow:var(--shadow)}
+
+/* ---------- Inspector panel ---------- */
 #panel {overflow:auto;background:var(--surface);border-left:1px solid var(--line);
- padding:19px 19px 30px;scrollbar-color:#c7d4e2 transparent}
-#panel h2 {font-size:17px;letter-spacing:-.025em;margin:0 0 6px;overflow-wrap:anywhere}
-#panel h3 {font-size:11px;letter-spacing:.045em;text-transform:uppercase;color:#546982;
- margin:22px 0 9px}
-#panel p {font-size:13px;line-height:1.55;overflow-wrap:anywhere;margin:9px 0}
-#panel a {color:#1765b1;overflow-wrap:anywhere;text-decoration:none}
-#panel a:hover {text-decoration:underline}
-.muted {color:var(--muted)}
-.kicker {font-size:11px;font-weight:650;letter-spacing:.05em;text-transform:uppercase;margin-bottom:9px}
-.chip {display:inline-block;padding:3px 8px;border-radius:14px;background:#eef4fa;
- color:#37526a;font-size:11px;margin:2px 5px 2px 0}
-.stat {font-size:12px;color:#5e7086;margin:8px 0}
-.hero {display:block;width:100%;height:auto;max-height:none;border-radius:5px;
- background:#f5f8fa;border:1px solid var(--line);margin:8px auto 4px}
-.link-row {display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:10px 0}
-.pill-button {font-weight:500;margin:3px 4px 3px 0;padding:5px 9px;font-size:11px;border-radius:16px}
-.evidence {border:none;border-bottom:1px solid var(--line);border-radius:0;
- background:transparent;padding:12px 0 16px;margin:0;font-size:12px;
- line-height:1.5;overflow-wrap:anywhere}
-.evidence.warn {background:transparent;border-bottom-color:#d09d5b}
-.evidence strong {display:block;font-size:13px;font-weight:700;color:var(--ink);margin-bottom:5px}
-.evidence small {display:block;color:var(--muted);margin-top:5px}
-.evidence .pill-button {border-radius:8px}
-.expand-actions {display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
-.expand-actions button {padding:6px 9px;font-size:11px}
-#panel details {margin-top:15px;border-top:1px solid var(--line);padding-top:12px}
-#panel summary {cursor:pointer;font-size:12px;font-weight:600;color:#52667d}
-.meta-row {font-size:11px;overflow-wrap:anywhere;padding:5px 0;border-bottom:1px solid #eff2f6}
-.meta-row span {display:block;color:var(--muted);margin-bottom:2px}
-.source-note {font-size:11px!important;color:#728095}
-.banner {font-size:12px;background:#fff5e9;color:#8b561d;padding:10px;border-radius:8px;margin-bottom:10px}
-footer {height:42px;display:flex;align-items:center;gap:13px;flex-wrap:wrap;
- background:white;border-top:1px solid var(--line);padding:8px 17px;color:var(--muted);font-size:10px}
-.legend {display:inline-flex;align-items:center;gap:5px}
-.dot {width:9px;height:9px;border-radius:50%}
-footer .note {margin-left:auto}
+ padding:24px 24px 40px;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+#panel h2 {font-size:20px;font-weight:800;letter-spacing:-.015em;line-height:1.25;margin:0 0 8px;overflow-wrap:anywhere}
+#panel h3 {font-size:13px;font-weight:800;color:var(--ink);letter-spacing:0;text-transform:none;
+ margin:24px 0 10px;padding-top:16px;border-top:1px solid var(--line-soft)}
+#panel p {font-size:13.5px;line-height:1.6;overflow-wrap:anywhere;margin:8px 0;color:var(--ink-2);max-width:60ch}
+#panel a {display:inline-block;color:var(--accent);font-weight:600;font-size:13px;
+ text-decoration:none;overflow-wrap:anywhere;margin:6px 0}
+#panel a:hover {text-decoration:underline;text-underline-offset:3px}
+.kicker {position:relative;display:block;padding-left:16px;font-size:12.5px;font-weight:800;
+ letter-spacing:0;text-transform:none;margin-bottom:6px}
+.kicker::first-letter {text-transform:uppercase}
+.kicker::before {content:"";position:absolute;left:0;top:50%;width:9px;height:9px;margin-top:-4.5px;
+ border-radius:50%;background:currentColor}
+.stat {display:inline-block;font-size:12.5px;color:var(--ink-2);background:var(--raised);
+ border:1px solid var(--line);border-radius:7px;padding:4px 9px;margin:6px 0}
+.chip {display:inline-block;padding:3px 9px;border-radius:999px;background:var(--raised);
+ border:1px solid var(--line-soft);color:var(--ink-2);font-size:12px;margin:3px 5px 3px 0}
+.hero {display:block;width:100%;height:auto;border-radius:12px;background:#fff;
+ border:1px solid var(--line);padding:10px;margin:4px 0 6px}
+.pill-button {font-weight:550;margin:3px 5px 3px 0;padding:5px 11px;font-size:12.5px;
+ border-radius:999px;background:var(--surface)}
+.pill-button:hover {background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.evidence {border:1px solid var(--line);border-left:3px solid var(--ok);border-radius:10px;
+ background:var(--surface);padding:10px 12px;margin:0 0 8px;font-size:12.5px;line-height:1.5;overflow-wrap:anywhere}
+.evidence.warn {border-left-color:var(--warn);background:var(--warn-soft)}
+.evidence strong {display:block;font-size:14px;font-weight:650;color:var(--ink);margin-bottom:3px}
+.evidence small {display:block;color:var(--muted);font-size:11.5px;margin-top:3px}
+.evidence .pill-button {margin-top:7px;font-size:12px;padding:4px 10px}
+.expand-actions {display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.expand-actions button {padding:7px 11px;font-size:12.5px;background:var(--accent-soft);
+ border-color:transparent;color:var(--accent)}
+.expand-actions button:hover {background:var(--accent);color:#fff;border-color:var(--accent)}
+#panel details {margin-top:24px;border:1px solid var(--line);border-radius:10px;padding:0 14px;background:var(--surface)}
+#panel details[open] {padding-bottom:8px}
+#panel summary {cursor:pointer;font-size:12.5px;font-weight:600;color:var(--ink-2);padding:10px 0;list-style-position:inside}
+#panel summary:hover {color:var(--ink)}
+.meta-row {font-size:12px;overflow-wrap:anywhere;padding:7px 0;border-top:1px solid var(--line-soft)}
+.meta-row span {display:block;color:var(--muted);font-size:11.5px;margin-bottom:2px}
+.meta-row div,.meta-row a {font-family:var(--font-mono);font-size:11.5px!important;color:var(--ink-2);font-weight:400!important}
+#panel .source-note {font-size:12px;color:var(--muted);line-height:1.5}
+.banner {font-size:13px;background:var(--warn-soft);color:var(--warn)!important;padding:10px 12px;
+ border-radius:8px;border:1px solid color-mix(in srgb,var(--warn) 30%,transparent);margin:4px 0 12px}
+
+/* ---------- Footer legend ---------- */
+footer {display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:var(--surface);
+ border-top:1px solid var(--line);padding:10px 24px;color:var(--ink-2);font-size:12px}
+.legend {display:inline-flex;align-items:center;gap:6px}
+.dot {width:12px;height:12px;border-radius:50%;flex:none}
+.dot.ring {background:var(--f,transparent);border:2px solid var(--c)}
+.dot.dash {background:var(--f,transparent);border:2px dashed var(--c)}
+.legend-line {width:18px;height:0;border-top:2px solid var(--edge-caption);position:relative}
+.legend-line::after {content:"";position:absolute;right:-2px;top:-5px;border:4px solid transparent;border-left:6px solid var(--edge-caption)}
+footer .note {margin-left:auto;color:var(--muted)}
+
+/* ---------- Responsive ---------- */
+@media (max-width:980px) {.app {grid-template-columns:minmax(0,1fr) 310px}}
 @media (max-width:790px) {
- header {gap:9px;padding:10px}
+ header {gap:10px;padding:14px 12px 12px}
  .identity {min-width:140px;flex:1}
+ .identity strong {font-size:15.5px}
+ .metrics {font-size:11px;padding:5px 9px}
  .searchwrap {order:3;flex-basis:100%;max-width:none}
- .app {grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(320px,1fr) 255px;
-   height:calc(100vh - 165px);min-height:600px}
- #panel {border-left:0;border-top:1px solid var(--line);padding:14px}
- footer {height:auto;min-height:42px;gap:9px}
+ body {height:auto;min-height:100dvh}
+ .app {grid-template-columns:minmax(0,1fr);grid-template-rows:62vh auto}
+ #panel {border-left:0;border-top:1px solid var(--line);padding:16px;overflow:visible}
+ footer {gap:10px;padding:10px 12px}
  footer .note {width:100%;margin:0}
 }
-@media (prefers-reduced-motion:reduce) {*,*:before,*:after {scroll-behavior:auto!important;transition:none!important}}
-/* Dark typography throughout the interface */
-:root {--muted:#172033}
-
-.identity div,#matches small,.metrics,#panel h3,.chip,.stat,
-.evidence small,#panel summary,.meta-row span,.source-note,footer {
- color:#172033!important
-}
-
-#search::placeholder {color:#172033;opacity:1}
+@media (prefers-reduced-motion:reduce) {*,*::before,*::after {transition:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
@@ -447,10 +529,10 @@ footer .note {margin-left:auto}
       <path d="m21 21-4.35-4.35" />
     </svg>
   </span>
-  <input id="search" type="search" placeholder="Find a node in this graph" aria-label="Find a node in the exported graph" autocomplete="off">
+  <input id="search" type="search" placeholder="Find a figure or concept in this view" aria-label="Find a node in the exported graph" autocomplete="off">
   <div id="matches" role="listbox" aria-label="Matching graph nodes"></div>
  </div>
- <div class="filters"><label for="relation-filter" class="muted" style="font-size:11px">Links</label>
+ <div class="filters"><label for="relation-filter">Show</label>
   <select id="relation-filter" aria-label="Filter displayed relationships">
    <option value="all">All relationships</option>
    <option value="caption">Caption links</option>
@@ -466,8 +548,16 @@ footer .note {margin-left:auto}
  <section class="canvas-wrap" aria-label="Interactive RDF knowledge graph">
   <svg id="network" role="group" aria-label="Draggable, zoomable graph. Select a node or relationship to inspect evidence."
        tabindex="0" xmlns="http://www.w3.org/2000/svg">
-   <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="4.5" orient="auto" markerUnits="userSpaceOnUse">
-    <path d="M0,0 L9,4.5 L0,9 Z" fill="#8295a8"></path></marker></defs>
+   <defs>
+    <marker id="arrow" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="8.5" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,1 L10,5 L0,9 L2.6,5 Z" fill="#b4bfca"></path></marker>
+    <marker id="arrow-caption" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="8.5" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,1 L10,5 L0,9 L2.6,5 Z" fill="#5fb09a"></path></marker>
+    <marker id="arrow-candidate" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="8.5" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,1 L10,5 L0,9 L2.6,5 Z" fill="#d9a650"></path></marker>
+    <marker id="arrow-evidence" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="8.5" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,1 L10,5 L0,9 L2.6,5 Z" fill="#a493cf"></path></marker>
+    <marker id="arrow-image" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="8.5" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,1 L10,5 L0,9 L2.6,5 Z" fill="#6fb8bd"></path></marker>
+    <marker id="arrow-glossary" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="8.5" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,1 L10,5 L0,9 L2.6,5 Z" fill="#b39ad6"></path></marker>
+    <marker id="arrow-topic" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="8.5" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,1 L10,5 L0,9 L2.6,5 Z" fill="#cfa27f"></path></marker>
+    <marker id="arrow-active" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="8.5" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,1 L10,5 L0,9 L2.6,5 Z" fill="#2563a8"></path></marker>
+   </defs>
    <g id="viewport"><g id="edges"></g><g id="nodes"></g></g>
   </svg>
   <div class="metrics" id="metrics">Loading network…</div>
@@ -545,11 +635,12 @@ footer .note {margin-left:auto}
  <aside id="panel" aria-live="polite" aria-label="Node and relationship details"></aside>
 </main>
 <footer>
- <span class="legend"><i class="dot" style="background:#168368"></i>Concept</span>
- <span class="legend"><i class="dot" style="background:#317cc4"></i>Figure</span>
- <span class="legend"><i class="dot" style="background:#8b6db2"></i>Evidence</span>
- <span class="legend"><i class="dot" style="background:#b87928"></i>Context</span>
- <span class="note">Connections are published RDF links, not inferred scientific causality.</span>
+ <span class="legend"><i class="dot ring" style="--c:#317cc4;--f:var(--t-figure)"></i>Figure</span>
+ <span class="legend"><i class="dot ring" style="--c:#168368;--f:var(--t-concept)"></i>Concept</span>
+ <span class="legend"><i class="dot ring" style="--c:#b87928;--f:var(--t-section)"></i>Report context</span>
+ <span class="legend"><i class="dot dash" style="--c:#8b6db2;--f:var(--t-mention)"></i>Caption evidence</span>
+ <span class="legend"><i class="legend-line"></i>Caption mentions concept</span>
+ <span class="note">Links show what captions mention, not what images depict or what causes what.</span>
 </footer>
 <script id="graph-data" type="application/json">__IPCC_DATA__</script>
 <script>
