@@ -12,18 +12,19 @@ IPCC images are referenced by URL, never downloaded or redistributed here.
 
 from __future__ import annotations
 
-from collections import Counter, defaultdict
+from collections import defaultdict
 from html import escape
 import json
 import os
 from pathlib import Path
 import re
+import sqlite3
 import tempfile
 from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote, urlsplit
 
 from rdflib import Graph, URIRef
-from rdflib.namespace import DCTERMS, PROV, RDF, RDFS, SKOS
+from rdflib.namespace import DCTERMS, RDF, RDFS, SKOS
 
 from ontology.schema import IPCC, resource_iri
 
@@ -31,38 +32,13 @@ if TYPE_CHECKING:
     from .subgraph import KnowledgeSubgraph
 
 
-# The view contains RDF schema descriptions as well as instance triples.
-# Only the following source-backed INSTANCE predicates are rendered as edges.
-# Keep this set aligned with subgraph._RELATIONS; RDF/OWL schema triples are
-# displayed as metadata, not misrepresented as scientific relationships.
+# Figure, ScientificConcept and mentionsConcept are the only visible entities/edges.
 _RELATIONS: dict[URIRef, tuple[str, str]] = {
-    IPCC.mentionsConcept: ("Caption mentions", "caption"),
-    IPCC.figureInSection: ("Published in section", "report"),
-    IPCC.figureInWorkingGroup: ("Published by working group", "report"),
-    IPCC.sectionOfWorkingGroup: ("Section of working group", "report"),
-    IPCC.partOfReport: ("Part of report", "report"),
-    IPCC.hasImageReference: ("Has image reference", "image"),
-    IPCC.hasCaptionMention: ("Has caption evidence", "evidence"),
-    IPCC.mentionInFigure: ("Mention appears in figure", "evidence"),
-    IPCC.denotesConcept: ("Accepted concept interpretation", "evidence"),
-    IPCC.candidateConcept: ("Candidate interpretation", "candidate"),
-    IPCC.glossaryWorkingGroup: ("Glossary attribution", "glossary"),
-    SKOS.member: ("Collection member", "topic"),
-    PROV.wasDerivedFrom: ("Derived from", "evidence"),
+    IPCC.mentionsConcept: ("mentionsConcept", "caption"),
 }
-
-# Classes are ordered from most specific to least specific. A Chapter is also
-# a ReportSection, and a ScientificConcept is also skos:Concept.
 _CLASSES: tuple[tuple[URIRef, str], ...] = (
-    (IPCC.Chapter, "section"),
-    (IPCC.AssessmentReport, "report"),
-    (IPCC.WorkingGroup, "working_group"),
-    (IPCC.ReportSection, "section"),
     (IPCC.Figure, "figure"),
-    (IPCC.ImageReference, "image"),
     (IPCC.ScientificConcept, "concept"),
-    (IPCC.CaptionMention, "mention"),
-    (SKOS.Collection, "topic"),
 )
 
 _MAX_ATTRIBUTES = 48
@@ -70,17 +46,17 @@ _MAX_ATTRIBUTE_CHARS = 1200
 
 
 def _public_url(value: object) -> str | None:
-    """Accept navigable public URLs only; never accept active-content schemes."""
+    """Accept navigable HTTP(S) URLs only, never active-content schemes."""
     if not isinstance(value, str) or not value or value != value.strip():
         return None
     if any(ord(character) < 32 or ord(character) == 127 for character in value):
         return None
     try:
-        parsed = urlsplit(value)
-        if (parsed.scheme not in {"https", "http"} or not parsed.hostname
-                or parsed.username is not None or parsed.password is not None):
+        parts = urlsplit(value)
+        if (parts.scheme not in {"https", "http"} or not parts.hostname
+                or parts.username is not None or parts.password is not None):
             return None
-        _ = parsed.port
+        _ = parts.port
     except ValueError:
         return None
     return value
@@ -92,49 +68,15 @@ def _text(graph: Graph, subject: URIRef, predicate: URIRef) -> str | None:
 
 
 def _short_label(value: URIRef) -> str:
-    fragment = str(value).rsplit("/", 1)[-1].rsplit("#", 1)[-1]
-    return unquote(fragment).replace("_", " ")
-
-
-def _label(graph: Graph, uri: URIRef, kind: str, figures: dict[str, Any]) -> str:
-    if kind == "figure":
-        hit = figures.get(str(uri))
-        if hit is not None:
-            return hit.label or hit.title or hit.figure_id
-        return _text(graph, uri, DCTERMS.identifier) or _short_label(uri)
-    if kind == "concept":
-        return _text(graph, uri, SKOS.prefLabel) or _short_label(uri)
-    if kind == "mention":
-        span = _text(graph, uri, IPCC.matchedText) or "Caption mention"
-        status = _text(graph, uri, IPCC.resolution) or ""
-        return f"{span} · {status}" if status in {"excluded", "ambiguous"} else span
-    if kind == "image":
-        index = _text(graph, uri, IPCC.imagePosition)
-        return f"Image {int(index) + 1}" if index is not None else "Image reference"
-    if kind == "section":
-        code = _text(graph, uri, IPCC.sectionCode)
-        if code:
-            return ("Chapter " + code[8:]) if code.startswith("chapter-") else code.replace("-", " ").title()
-    if kind == "working_group":
-        return _text(graph, uri, IPCC.workingGroupCode) or "Working group"
-    if kind == "report":
-        return _text(graph, uri, DCTERMS.identifier) or "Assessment report"
-    if kind == "topic":
-        return _text(graph, uri, RDFS.label) or "Curated topic"
-    return _short_label(uri)
+    return unquote(str(value).rsplit("/", 1)[-1].rsplit("#", 1)[-1]).replace("_", " ")
 
 
 def _safe_attributes(graph: Graph, uri: URIRef, known: set[str]) -> list[dict[str, str]]:
-    """Include published literal/provenance metadata, not entire captions."""
+    """Show source-backed metadata without publishing complete captions."""
     attributes: list[dict[str, str]] = []
-    for predicate, value in sorted(graph.predicate_objects(uri), key=lambda item: (str(item[0]), str(item[1]))):
-        if predicate == IPCC.captionText:
-            continue  # Do not silently republish original full IPCC captions.
-        if (predicate in _RELATIONS and isinstance(value, URIRef)
-                and str(value) in known):
-            continue  # Represent this exact triple as an inspectable graph edge.
-        if predicate == RDF.type:
-            # Type IRIs are shown under the inspector's ontology metadata.
+    for predicate, value in sorted(graph.predicate_objects(uri),
+                                   key=lambda item: (str(item[0]), str(item[1]))):
+        if predicate in {RDF.type, IPCC.captionText, IPCC.mentionsConcept}:
             continue
         text_value = str(value)
         if len(text_value) > _MAX_ATTRIBUTE_CHARS:
@@ -148,150 +90,179 @@ def _safe_attributes(graph: Graph, uri: URIRef, known: set[str]) -> list[dict[st
     return attributes[:_MAX_ATTRIBUTES]
 
 
-def _visualization_data(view: KnowledgeSubgraph) -> dict[str, Any]:
-    """Prepare a faithful network of *published* typed instance resources.
+def _db_data(corpus_path: Path, concepts_path: Path) -> tuple[dict[str, dict[str, Any]], dict[str, list[str]],
+                                 dict[str, list[dict[str, Any]]], dict[str, str]]:
+    """Load the original inspector details, not extra RDF instance nodes.
 
-    Every edge in the returned data exists in ``view.graph``. Search-result
-    ranking determines which nodes appear initially; evidence and structural
-    resources remain locally searchable and expandable in the same network.
+    The local checkout's SQLite sources are read-only. All image URLs retain
+    database position order; only matched evidence snippets are exported.
+    """
+    if not corpus_path.is_file() or not concepts_path.is_file():
+        raise FileNotFoundError(
+            "Figure inspector needs data/processed/corpus.db and concepts.db "
+            "beside this package (the same repository checkout)."
+        )
+    figures: dict[str, dict[str, Any]] = {}
+    images: dict[str, list[str]] = defaultdict(list)
+    mentions: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    labels: dict[str, str] = {}
+    with sqlite3.connect(corpus_path.resolve().as_uri() + "?mode=ro", uri=True) as db:
+        db.row_factory = sqlite3.Row
+        db.execute("PRAGMA query_only=ON")
+        for row in db.execute(
+            "SELECT figure_id, figure_label, title, working_group, section, "
+            "caption_status, source_url FROM figures"
+        ):
+            figures[row["figure_id"]] = dict(row)
+        for fid, url in db.execute(
+            "SELECT figure_id, image_url FROM figure_images ORDER BY figure_id, position"
+        ):
+            if _public_url(url):
+                images[fid].append(url)
+    with sqlite3.connect(concepts_path.resolve().as_uri() + "?mode=ro", uri=True) as db:
+        db.row_factory = sqlite3.Row
+        db.execute("PRAGMA query_only=ON")
+        for term_id, label in db.execute("SELECT term_id, canonical_label FROM concepts"):
+            labels[str(resource_iri("concept", term_id))] = label
+        candidates: dict[int, list[str]] = defaultdict(list)
+        for mention_id, term_id in db.execute(
+            "SELECT mention_id, term_id FROM mention_candidates ORDER BY mention_id, term_id"
+        ):
+            candidates[mention_id].append(str(resource_iri("concept", term_id)))
+        for row in db.execute(
+            "SELECT mention_id, figure_id, start_offset, end_offset, matched_text, "
+            "match_kind, resolution, quality_rule, term_id FROM mentions "
+            "ORDER BY figure_id, start_offset, end_offset, mention_id"
+        ):
+            mentions[row["figure_id"]].append({
+                "id": row["mention_id"],
+                "text": row["matched_text"],
+                "start": row["start_offset"],
+                "end": row["end_offset"],
+                "matchKind": row["match_kind"],
+                "resolution": row["resolution"],
+                "qualityRule": row["quality_rule"],
+                "selected": (str(resource_iri("concept", row["term_id"]))
+                             if row["term_id"] else None),
+                "candidates": candidates[row["mention_id"]],
+            })
+    return figures, images, mentions, labels
+
+
+def _visualization_data(view: KnowledgeSubgraph) -> dict[str, Any]:
+    """Create initial nodes plus hidden, real Figure–Concept neighbors.
+
+    ``view.graph`` stays the user-sized RDF selection. ``view._source`` is
+    the complete published RDF, used *only* to provide expandable links in
+    standalone HTML. No new scientific assertion or third entity type is made.
     """
     rdf = view.graph
-    hit_by_uri = {
-        str(resource_iri("figure", item.figure_id)): item for item in view.figures
+    source = view._source if view._source is not None else rdf
+    kg = getattr(view, "_kg", None)
+    root = Path(__file__).resolve().parents[1]
+    figures_db, image_db, evidence_db, concept_labels = _db_data(
+        kg.corpus_path if kg is not None and hasattr(kg, "corpus_path") else root / "data/processed/corpus.db",
+        kg.concepts_path if kg is not None and hasattr(kg, "concepts_path") else root / "data/processed/concepts.db",
+    )
+    # Explicit Python view.expand() additions are already in view.graph and
+    # should be visible immediately; unexpanded viewers retain the API limit.
+    expanded_ids = sorted({str(node)
+                           for klass in (IPCC.Figure, IPCC.ScientificConcept)
+                           for node in rdf.subjects(RDF.type, klass)})
+    initial_ids = list(dict.fromkeys(
+        [str(resource_iri("concept", c.term_id)) for c in view.concepts]
+        + [str(resource_iri("figure", f.figure_id)) for f in view.figures]
+        + expanded_ids
+    ))
+    allowed_figures = {
+        node for node in source.subjects(RDF.type, IPCC.Figure)
+        if (not view._wg_filter or
+            (_text(source, node, IPCC.workingGroupCode) or
+             figures_db.get(_text(source, node, DCTERMS.identifier) or "", {}).get(
+                 "working_group")) == view._wg_filter)
     }
-    node_kinds: dict[str, str] = {}
-    for rdf_class, kind in _CLASSES:
-        for node in rdf.subjects(RDF.type, rdf_class):
-            if isinstance(node, URIRef):
-                node_kinds.setdefault(str(node), kind)
-    known = set(node_kinds)
+    allowed_concepts = set(source.subjects(RDF.type, IPCC.ScientificConcept))
+    allowed = allowed_figures | allowed_concepts
+    adjacency: dict[URIRef, set[URIRef]] = defaultdict(set)
+    pairs: list[tuple[URIRef, URIRef]] = []
+    for fig, concept in source.subject_objects(IPCC.mentionsConcept):
+        if fig in allowed_figures and concept in allowed_concepts:
+            pairs.append((fig, concept))
+            adjacency[fig].add(concept)
+            adjacency[concept].add(fig)
+
+    # Only the connected components touching the initial selection are exposed
+    # for expansion; unrelated graph components are not exported unnecessarily.
+    reachable = {URIRef(identifier) for identifier in initial_ids if URIRef(identifier) in allowed}
+    frontier = list(reachable)
+    for current in frontier:
+        for other in adjacency.get(current, ()):
+            if other not in reachable:
+                reachable.add(other)
+                frontier.append(other)
+    known = {str(uri) for uri in reachable}
+    hits = {hit.figure_id: hit for hit in view.figures}
 
     nodes: list[dict[str, Any]] = []
-    for uri_str in sorted(known):
-        uri = URIRef(uri_str)
-        kind = node_kinds[uri_str]
-        rdf_types = sorted(str(typ) for typ in rdf.objects(uri, RDF.type) if isinstance(typ, URIRef))
-        klass = next((c for c, k in _CLASSES if k == kind and c in rdf.objects(uri, RDF.type)), None)
-        # Several ontology classes may map to the same presentation kind.
-        if kind == "section" and (uri, RDF.type, IPCC.Chapter) in rdf:
-            klass = IPCC.Chapter
+    for uri in sorted(reachable, key=str):
+        kind = "figure" if uri in allowed_figures else "concept"
+        rdf_types = sorted(str(typ) for typ in source.objects(uri, RDF.type)
+                           if isinstance(typ, URIRef))
+        klass = IPCC.Figure if kind == "figure" else IPCC.ScientificConcept
+        identifier = _text(source, uri, DCTERMS.identifier)
         node = {
-            "id": uri_str,
-            "kind": kind,
-            "label": _label(rdf, uri, kind, hit_by_uri),
+            "id": str(uri), "kind": kind,
+            "label": (figures_db.get(identifier or "", {}).get("figure_label")
+                      or figures_db.get(identifier or "", {}).get("title")
+                      or identifier or _short_label(uri)) if kind == "figure" else (
+                      _text(source, uri, SKOS.prefLabel) or _short_label(uri)),
             "types": rdf_types,
-            "typeDescription": _text(rdf, klass, RDFS.comment) if klass is not None else None,
-            "attributes": _safe_attributes(rdf, uri, known),
+            "typeDescription": _text(source, klass, RDFS.comment),
+            "attributes": _safe_attributes(source, uri, known),
         }
         if kind == "figure":
-            hit = hit_by_uri.get(uri_str)
+            row = figures_db.get(identifier or "", {})
+            hit = hits.get(identifier or "")
             node["figure"] = {
-                "id": _text(rdf, uri, DCTERMS.identifier) or (hit.figure_id if hit else None),
-                "title": hit.title if hit is not None else None,
-                "wg": hit.working_group if hit is not None else None,
-                "section": hit.section if hit is not None else None,
-                "source": _public_url(_text(rdf, uri, DCTERMS.source)),
-                "captionStatus": _text(rdf, uri, IPCC.captionStatus),
-                "matches": ([{"text": span.text, "start": span.start_offset,
-                             "end": span.end_offset} for span in hit.matches]
-                            if hit is not None else []),
-                "images": [],
-                "mentions": [],
+                "id": identifier,
+                "title": row.get("title") or (hit.title if hit else None),
+                "wg": row.get("working_group") or _text(source, uri, IPCC.workingGroupCode),
+                "section": row.get("section") or _text(source, uri, IPCC.sectionCode),
+                "source": _public_url(_text(source, uri, DCTERMS.source)),
+                "captionStatus": _text(source, uri, IPCC.captionStatus),
+                "matches": ([{"text": m.text, "start": m.start_offset,
+                              "end": m.end_offset} for m in hit.matches] if hit else []),
+                "images": (image_db.get(identifier or "") or sorted(
+                    filter(None, (_public_url(str(url)) for url in source.objects(uri, IPCC.imageURL))))),
+                "mentions": evidence_db.get(identifier or "", []),
             }
-        elif kind == "concept":
+        else:
             node["concept"] = {
-                "id": _text(rdf, uri, DCTERMS.identifier),
-                "aliases": sorted({str(x) for x in rdf.objects(uri, SKOS.altLabel)},
-                                  key=str.casefold),
-                "source": _public_url(_text(rdf, uri, DCTERMS.source)),
-            }
-        elif kind == "mention":
-            node["mention"] = {
-                "text": _text(rdf, uri, IPCC.matchedText),
-                "start": _text(rdf, uri, IPCC.startOffset),
-                "end": _text(rdf, uri, IPCC.endOffset),
-                "resolution": _text(rdf, uri, IPCC.resolution),
-                "matchKind": _text(rdf, uri, IPCC.matchKind),
-                "qualityRule": _text(rdf, uri, IPCC.qualityRule),
-                "selected": next((str(c) for c in rdf.objects(uri, IPCC.denotesConcept)), None),
-                "candidates": sorted(str(c) for c in rdf.objects(uri, IPCC.candidateConcept)),
-            }
-        elif kind == "image":
-            node["image"] = {
-                "url": _public_url(_text(rdf, uri, IPCC.imageURL)),
-                "position": _text(rdf, uri, IPCC.imagePosition),
-            }
-        elif kind == "topic":
-            node["topic"] = {
-                "description": _text(rdf, uri, DCTERMS.description),
-                "references": sorted(filter(None, (
-                    _public_url(str(x)) for x in rdf.objects(uri, DCTERMS.references)
-                ))),
+                "id": identifier,
+                "aliases": sorted({str(x) for x in source.objects(uri, SKOS.altLabel)}, key=str.casefold),
+                "source": _public_url(_text(source, uri, DCTERMS.source)),
             }
         nodes.append(node)
 
-    node_lookup = {n["id"]: n for n in nodes}
-    edges: list[dict[str, Any]] = []
-    for predicate, (caption, family) in _RELATIONS.items():
-        for subject, obj in rdf.subject_objects(predicate):
-            if not isinstance(subject, URIRef) or not isinstance(obj, URIRef):
-                continue
-            a, b = str(subject), str(obj)
-            if a not in known or b not in known:
-                continue
-            edges.append({
-                "id": f"{a}|{predicate}|{b}",
-                "from": a,
-                "to": b,
-                "predicate": str(predicate),
-                "label": _text(rdf, predicate, RDFS.label) or caption,
-                "description": _text(rdf, predicate, RDFS.comment),
-                "domain": sorted(str(x) for x in rdf.objects(predicate, RDFS.domain)),
-                "range": sorted(str(x) for x in rdf.objects(predicate, RDFS.range)),
-                "family": family,
-            })
-    edges.sort(key=lambda e: (e["family"], e["predicate"], e["from"], e["to"]))
-
-    # Bind image references and *all* recorded caption evidence to the figure
-    # inspector, even when these evidence resources start visually collapsed.
-    image_refs: dict[str, list[tuple[int, str]]] = defaultdict(list)
-    caption_mentions: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    accepted_count: Counter[str] = Counter()
-    for edge in edges:
-        a, b = edge["from"], edge["to"]
-        predicate = edge["predicate"]
-        if predicate == str(IPCC.hasImageReference):
-            image = node_lookup[b].get("image", {})
-            url = image.get("url")
-            if url:
-                image_refs[a].append((int(image.get("position") or 0), url))
-        elif predicate == str(IPCC.hasCaptionMention):
-            mention = node_lookup[b].get("mention")
-            if mention:
-                caption_mentions[a].append({"id": b, **mention})
-        elif predicate == str(IPCC.mentionsConcept):
-            accepted_count[b] += 1
-
-    for node in nodes:
-        if node["kind"] == "figure":
-            detail = node["figure"]
-            detail["images"] = [url for _, url in sorted(image_refs.get(node["id"], []))]
-            detail["mentions"] = sorted(
-                caption_mentions.get(node["id"], []),
-                key=lambda x: (int(x["start"] or 0), int(x["end"] or 0), x["id"]),
-            )
-        elif node["kind"] == "concept":
-            node["concept"]["figuresInView"] = accepted_count[node["id"]]
-
-    initial_ids = [
-        str(resource_iri("concept", c.term_id)) for c in view.concepts
-    ] + [
-        str(resource_iri("figure", f.figure_id)) for f in view.figures
-    ]
-    visible = list(dict.fromkeys(node for node in initial_ids if node in known))
-    seed = str(resource_iri("concept", view.concepts[0].term_id)) if view.match == "concept" and view.concepts else (
-        visible[0] if visible else None
-    )
+    edges = []
+    for fig, concept in pairs:
+        if fig not in reachable or concept not in reachable:
+            continue
+        predicate = IPCC.mentionsConcept
+        a, b = str(fig), str(concept)
+        edges.append({
+            "id": f"{a}|{predicate}|{b}",
+            "from": a, "to": b, "predicate": str(predicate),
+            "label": "mentions",
+            "description": _text(source, predicate, RDFS.comment),
+            "domain": sorted(str(x) for x in source.objects(predicate, RDFS.domain)),
+            "range": sorted(str(x) for x in source.objects(predicate, RDFS.range)),
+            "family": "caption",
+        })
+    edges.sort(key=lambda item: (item["from"], item["to"]))
+    visible = [identifier for identifier in initial_ids if identifier in known]
+    seed = (str(resource_iri("concept", view.concepts[0].term_id))
+            if view.match == "concept" and view.concepts else (visible[0] if visible else None))
     return {
         "query": view.query,
         "match": view.match,
@@ -301,8 +272,9 @@ def _visualization_data(view: KnowledgeSubgraph) -> dict[str, Any]:
         "seed": seed,
         "nodes": nodes,
         "edges": edges,
+        "conceptLabels": concept_labels,
         "rdfTriples": len(rdf),
-        "semantics": "A figure–concept link means a resolved caption mention, not visual depiction or scientific causality.",
+        "semantics": "Caption mentions concept; not visual depiction or scientific causality.",
     }
 
 
@@ -327,11 +299,10 @@ _HTML_DOCUMENT = r'''<!doctype html>
  --line:#e3e8ed; --line-soft:#eef2f5;
  --accent:#2563a8; --accent-soft:#eef4fb;
  --ok:#1f8a6e; --ok-soft:#eef8f4; --warn:#b26b12; --warn-soft:#fdf6ec;
- --edge:#b4bfca; --edge-caption:#5fb09a; --edge-candidate:#d9a650; --edge-evidence:#a493cf;
+ --edge:#b4bfca; --edge-caption:#5fb09a;
  --edge-report:#b4bfca; --edge-image:#6fb8bd; --edge-glossary:#b39ad6; --edge-topic:#cfa27f;
  --label:#1f2b36;
  --t-concept:#effaf6; --t-figure:#f0f6fd; --t-mention:#f6f3fb; --t-image:#eef9f9;
- --t-section:#fdf7ee; --t-wg:#f6f2fb; --t-report:#f4f5f7; --t-topic:#fbf4ef;
  --shadow:0 1px 2px rgba(26,37,48,.04),0 4px 14px rgba(26,37,48,.06);
  --font-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
 }
@@ -373,11 +344,6 @@ header {position:relative;display:flex;align-items:center;gap:16px;flex-wrap:wra
 #matches button:hover,#matches button:focus-visible {background:var(--accent-soft)}
 #matches small {display:block;color:var(--muted);font-weight:400;font-size:11.5px;margin-top:1px}
 #matches small::first-letter {text-transform:uppercase}
-.filters {display:flex;gap:8px;align-items:center}
-.filters label {font-size:12.5px;color:var(--muted)!important}
-#relation-filter {height:38px;max-width:190px;border:1px solid var(--line);border-radius:10px;
- background:var(--surface);padding:0 10px;font-size:13px;cursor:pointer}
-#relation-filter:hover {border-color:#c9d2db}
 
 /* ---------- Main layout ---------- */
 .app {display:grid;grid-template-columns:minmax(0,1fr) 360px;min-height:0;height:auto}
@@ -392,12 +358,6 @@ header {position:relative;display:flex;align-items:center;gap:16px;flex-wrap:wra
 .graph-edge {stroke:var(--edge);stroke-width:1.3;fill:none;stroke-linecap:round;
  pointer-events:stroke;cursor:pointer;transition:opacity .15s,stroke-width .12s}
 .graph-edge[data-family="caption"] {stroke:var(--edge-caption);stroke-width:1.7;marker-end:url(#arrow-caption)}
-.graph-edge[data-family="report"] {stroke:var(--edge-report)}
-.graph-edge[data-family="image"] {stroke:var(--edge-image);marker-end:url(#arrow-image)}
-.graph-edge[data-family="evidence"] {stroke:var(--edge-evidence);stroke-dasharray:2 4;marker-end:url(#arrow-evidence)}
-.graph-edge[data-family="candidate"] {stroke:var(--edge-candidate);stroke-dasharray:5 4;marker-end:url(#arrow-candidate)}
-.graph-edge[data-family="glossary"] {stroke:var(--edge-glossary);marker-end:url(#arrow-glossary)}
-.graph-edge[data-family="topic"] {stroke:var(--edge-topic);marker-end:url(#arrow-topic)}
 .graph-edge:hover {stroke:var(--accent);stroke-width:2.6;marker-end:url(#arrow-active)}
 .graph-edge:focus-visible {outline:none;stroke:var(--accent);stroke-width:2.8;marker-end:url(#arrow-active)}
 .graph-edge.selected {stroke:var(--accent);stroke-width:3;stroke-dasharray:none;marker-end:url(#arrow-active)}
@@ -411,21 +371,29 @@ header {position:relative;display:flex;align-items:center;gap:16px;flex-wrap:wra
  transition:stroke-width .12s,filter .12s}
 .graph-node[aria-label^="concept:"] circle {fill:var(--t-concept);stroke-width:2}
 .graph-node[aria-label^="figure:"] circle {fill:var(--t-figure);stroke-width:2}
-.graph-node[aria-label^="mention:"] circle {fill:var(--t-mention);stroke-dasharray:4 3}
-.graph-node[aria-label^="image:"] circle {fill:var(--t-image)}
-.graph-node[aria-label^="section:"] circle {fill:var(--t-section)}
-.graph-node[aria-label^="working group:"] circle {fill:var(--t-wg)}
-.graph-node[aria-label^="report:"] circle {fill:var(--t-report)}
-.graph-node[aria-label^="topic:"] circle {fill:var(--t-topic)}
 .graph-node:hover circle {stroke-width:3;filter:drop-shadow(0 2px 8px rgba(26,37,48,.12))}
 .graph-node.selected circle {stroke-width:3.5;filter:drop-shadow(0 4px 14px rgba(26,37,48,.18))}
 .graph-node:focus-visible circle {stroke-width:4.5;stroke-dasharray:none}
 .graph-edge.dimmed,.graph-node.dimmed {opacity:.18}
+.graph-edge-label {pointer-events:none}
+.graph-edge-label rect {
+    fill: #ffffff;
+    stroke: #FF3064;
+    stroke-width: 1.5;
+    opacity: 1;
+    fill-opacity: 1;
+}
+
+.graph-edge-label text {
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 800;
+    fill: #FF3064;
+}
 
 /* Slightly condensed labels so they fit inside their disc */
 .graph-node text {font-family:inherit;fill:var(--label);font-size:10.3px;font-weight:750;letter-spacing:-.01em;
  text-anchor:middle;pointer-events:none;stroke:none;letter-spacing:0}
-.graph-node.secondary text {font-size:9.6px;font-weight:650;fill:var(--ink-2)}
 .graph-node.selected text {font-weight:800}
 
 /* Canvas overlays */
@@ -495,10 +463,6 @@ footer {display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:var(-
 .legend {display:inline-flex;align-items:center;gap:6px}
 .dot {width:12px;height:12px;border-radius:50%;flex:none}
 .dot.ring {background:var(--f,transparent);border:2px solid var(--c)}
-.dot.dash {background:var(--f,transparent);border:2px dashed var(--c)}
-.legend-line {width:18px;height:0;border-top:2px solid var(--edge-caption);position:relative}
-.legend-line::after {content:"";position:absolute;right:-2px;top:-5px;border:4px solid transparent;border-left:6px solid var(--edge-caption)}
-footer .note {margin-left:auto;color:var(--muted)}
 
 /* ---------- Responsive ---------- */
 @media (max-width:980px) {.app {grid-template-columns:minmax(0,1fr) 310px}}
@@ -512,7 +476,6 @@ footer .note {margin-left:auto;color:var(--muted)}
  .app {grid-template-columns:minmax(0,1fr);grid-template-rows:62vh auto}
  #panel {border-left:0;border-top:1px solid var(--line);padding:16px;overflow:visible}
  footer {gap:10px;padding:10px 12px}
- footer .note {width:100%;margin:0}
 }
 @media (prefers-reduced-motion:reduce) {*,*::before,*::after {transition:none!important;scroll-behavior:auto!important}}
 </style>
@@ -532,17 +495,6 @@ footer .note {margin-left:auto;color:var(--muted)}
   <input id="search" type="search" placeholder="Find a figure or concept in this view" aria-label="Find a node in the exported graph" autocomplete="off">
   <div id="matches" role="listbox" aria-label="Matching graph nodes"></div>
  </div>
- <div class="filters"><label for="relation-filter">Show</label>
-  <select id="relation-filter" aria-label="Filter displayed relationships">
-   <option value="all">All relationships</option>
-   <option value="caption">Caption links</option>
-   <option value="report">Report structure</option>
-   <option value="evidence">Caption evidence</option>
-   <option value="candidate">Candidate matches</option>
-   <option value="glossary">Glossary attribution</option>
-   <option value="topic">Curated topics</option>
-   <option value="image">Image references</option>
-  </select></div>
 </header>
 <main class="app">
  <section class="canvas-wrap" aria-label="Interactive RDF knowledge graph">
@@ -551,14 +503,9 @@ footer .note {margin-left:auto;color:var(--muted)}
    <defs>
     <marker id="arrow" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="8.5" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,1 L10,5 L0,9 L2.6,5 Z" fill="#b4bfca"></path></marker>
     <marker id="arrow-caption" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="8.5" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,1 L10,5 L0,9 L2.6,5 Z" fill="#5fb09a"></path></marker>
-    <marker id="arrow-candidate" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="8.5" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,1 L10,5 L0,9 L2.6,5 Z" fill="#d9a650"></path></marker>
-    <marker id="arrow-evidence" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="8.5" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,1 L10,5 L0,9 L2.6,5 Z" fill="#a493cf"></path></marker>
-    <marker id="arrow-image" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="8.5" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,1 L10,5 L0,9 L2.6,5 Z" fill="#6fb8bd"></path></marker>
-    <marker id="arrow-glossary" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="8.5" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,1 L10,5 L0,9 L2.6,5 Z" fill="#b39ad6"></path></marker>
-    <marker id="arrow-topic" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="8.5" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,1 L10,5 L0,9 L2.6,5 Z" fill="#cfa27f"></path></marker>
     <marker id="arrow-active" viewBox="0 0 10 10" markerWidth="9" markerHeight="9" refX="8.5" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,1 L10,5 L0,9 L2.6,5 Z" fill="#2563a8"></path></marker>
    </defs>
-   <g id="viewport"><g id="edges"></g><g id="nodes"></g></g>
+   <g id="viewport"><g id="edges"></g><g id="nodes"></g><g id="edge-labels"></g></g>
   </svg>
   <div class="metrics" id="metrics">Loading network…</div>
   <div id="empty" role="status">No graph nodes in this query.<br>Try a different concept or working group.</div>
@@ -636,24 +583,19 @@ footer .note {margin-left:auto;color:var(--muted)}
 </main>
 <footer>
  <span class="legend"><i class="dot ring" style="--c:#317cc4;--f:var(--t-figure)"></i>Figure</span>
- <span class="legend"><i class="dot ring" style="--c:#168368;--f:var(--t-concept)"></i>Concept</span>
- <span class="legend"><i class="dot ring" style="--c:#b87928;--f:var(--t-section)"></i>Report context</span>
- <span class="legend"><i class="dot dash" style="--c:#8b6db2;--f:var(--t-mention)"></i>Caption evidence</span>
- <span class="legend"><i class="legend-line"></i>Caption mentions concept</span>
- <span class="note">Links show what captions mention, not what images depict or what causes what.</span>
+ <span class="legend"><i class="dot ring" style="--c:#168368;--f:var(--t-concept)"></i>Scientific Concept</span>
 </footer>
 <script id="graph-data" type="application/json">__IPCC_DATA__</script>
 <script>
 (()=>{
  'use strict';
  const byId=id=>document.getElementById(id);
- const svg=byId('network'), world=byId('viewport'), edgeLayer=byId('edges'), nodeLayer=byId('nodes');
- const panel=byId('panel'), metrics=byId('metrics'), results=byId('matches'), filter=byId('relation-filter');
+ const svg=byId('network'), world=byId('viewport'), edgeLayer=byId('edges'), labelLayer=byId('edge-labels'), nodeLayer=byId('nodes');
+ const panel=byId('panel'), metrics=byId('metrics'), results=byId('matches');
  const NS='http://www.w3.org/2000/svg';
- const config={maxVisible:135, expandBatch:14, maxTicks:165};
- const palette={concept:'#168368',figure:'#317cc4',mention:'#8b6db2',image:'#29858b',
-   section:'#b87928',working_group:'#9671b6',report:'#7b8295',topic:'#ac764d'};
- const radii={concept:33,figure:29,mention:20,image:21,section:25,working_group:24,report:25,topic:25};
+ const config={maxTicks:165};
+ const palette={concept:'#168368',figure:'#317cc4'};
+ const radii={concept:33,figure:29};
  const payload=JSON.parse(byId('graph-data').textContent);
  byId('subtitle').textContent=`AR6 · ${payload.selectedFigures} of ${payload.totalFigures} matching figures`;
  const allNodes=new Map(payload.nodes.map(item=>[item.id,item]));
@@ -664,8 +606,8 @@ footer .note {margin-left:auto;color:var(--muted)}
    incident.get(edge.to)?.push(edge);
  }
  const firstVisible=new Set(payload.initial);
- let visible=new Set(firstVisible), selection=null, selectedEdge=null, activeFilter='all';
- let nodeSVG=new Map(), edgeSVG=new Map(), coords=new Map(), width=700,height=500;
+ let visible=new Set(firstVisible), selection=null, selectedEdge=null;
+ let nodeSVG=new Map(), edgeSVG=new Map(), labelSVG=new Map(), coords=new Map(), width=700,height=500;
  let scale=1,tx=0,ty=0,frame=0,remaining=0,drag=null,pan=null;
  const prefersReduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
@@ -699,14 +641,12 @@ footer .note {margin-left:auto;color:var(--muted)}
  };
  const worldPoint=e=>{const p=screenPoint(e);return {x:(p.x-tx)/scale,y:(p.y-ty)/scale};};
  const applyCamera=()=>world.setAttribute('transform',`translate(${tx} ${ty}) scale(${scale})`);
- const activeEdges=()=>payload.edges.filter(e=>visible.has(e.from)&&visible.has(e.to)&&
-   (activeFilter==='all'||e.family===activeFilter));
+ const activeEdges=()=>payload.edges.filter(e=>visible.has(e.from)&&visible.has(e.to));
  const hash=id=>{let h=2166136261;for(let i=0;i<id.length;i++){h=Math.imul(h^id.charCodeAt(i),16777619);}return h>>>0;};
  const place=id=>{
    if(coords.has(id))return;
    const item=allNodes.get(id);const h=hash(id);const theta=(h%3600)*Math.PI/1800;
-   const rank={concept:150,figure:260,section:330,working_group:375,report:420,
-      topic:325,mention:345,image:310};
+   const rank={concept:150,figure:260};
    const distance=(rank[item.kind]??250)+(Math.floor(h/4000)%61)-30;
    coords.set(id,{x:Math.cos(theta)*distance,y:Math.sin(theta)*distance,
        vx:0,vy:0,fx:0,fy:0,pinned:false});
@@ -720,7 +660,7 @@ footer .note {margin-left:auto;color:var(--muted)}
    metrics.textContent=`${visible.size} nodes · ${activeEdges().length} links · ${payload.rdfTriples} RDF triples in view`;
  }
  function draw(){
-   nodeSVG.clear(); edgeSVG.clear();nodeLayer.replaceChildren();edgeLayer.replaceChildren();
+   nodeSVG.clear(); edgeSVG.clear();labelSVG.clear();nodeLayer.replaceChildren();edgeLayer.replaceChildren();labelLayer.replaceChildren();
    for(const id of visible)place(id);
    for(const e of activeEdges()){
      const line=svgEl('line',{class:'graph-edge','data-family':e.family,
@@ -794,6 +734,7 @@ footer .note {margin-left:auto;color:var(--muted)}
      line.setAttribute('x1',a.x+dx*ra/length);line.setAttribute('y1',a.y+dy*ra/length);
      line.setAttribute('x2',b.x-dx*rb/length);line.setAttribute('y2',b.y-dy*rb/length);
    }
+   placeEdgeLabels();
  }
  function fit(){
    if(!visible.size)return;
@@ -825,7 +766,7 @@ footer .note {margin-left:auto;color:var(--muted)}
      for(const e of connections){
        const a=coords.get(e.from),b=coords.get(e.to);if(!a||!b)continue;
        const dx=b.x-a.x,dy=b.y-a.y,d=Math.max(1,Math.hypot(dx,dy));
-       const desired=e.family==='caption'?200:200;
+       const desired=200;
        const tension=Math.max(-8,Math.min(8,(d-desired)*.012));
        const fx=tension*dx/d,fy=tension*dy/d;
        a.fx+=fx;a.fy+=fy;b.fx-=fx;b.fy-=fy;
@@ -860,6 +801,29 @@ footer .note {margin-left:auto;color:var(--muted)}
      line.classList.toggle('dimmed',related.size>0&&!(
          id===selectedEdge||selection&&(e.from===selection||e.to===selection)));
    }
+   syncEdgeLabels();
+ }
+ function syncEdgeLabels(){
+   labelLayer.replaceChildren();labelSVG.clear();
+   if(!selection)return;
+   for(const e of activeEdges()){
+     if(e.from!==selection&&e.to!==selection)continue;
+     const g=svgEl('g',{class:'graph-edge-label','aria-hidden':'true'});
+     const width=103;
+     const bg=svgEl('rect',{x:-width/2,y:-11,width,height:22,rx:8});
+     const text=svgEl('text',{'text-anchor':'middle','dominant-baseline':'middle'});
+     text.textContent='mentions';g.appendChild(bg);g.appendChild(text);
+     labelLayer.appendChild(g);labelSVG.set(e.id,g);
+   }
+   placeEdgeLabels();
+ }
+ function placeEdgeLabels(){
+   for(const [id,label] of labelSVG){
+     const edge=allEdges.get(id),a=coords.get(edge.from),b=coords.get(edge.to);
+     if(!a||!b)continue;
+     const dx=b.x-a.x,dy=b.y-a.y,len=Math.max(1,Math.hypot(dx,dy));
+     label.setAttribute('transform',`translate(${(a.x+b.x)/2-7*dy/len} ${(a.y+b.y)/2+7*dx/len})`);
+   }
  }
  function focus(id){
    const p=coords.get(id);if(!p)return;
@@ -870,8 +834,7 @@ footer .note {margin-left:auto;color:var(--muted)}
  function reveal(id){
    if(!allNodes.has(id))return;
    if(!visible.has(id)){
-     if(visible.size>=config.maxVisible){notice('Graph is at its display limit. Reset or use a smaller query.');return;}
-     visible.add(id);place(id);draw();settle();
+       visible.add(id);place(id);draw();settle();
    }
  }
  function selectNode(id){
@@ -908,43 +871,24 @@ footer .note {margin-left:auto;color:var(--muted)}
    return summary;
  }
  function relatedButtons(id){
-   const all=incident.get(id)??[];
-   const options=[['Connected figures & concepts','core',e=>{
-       const n=allNodes.get(e.from===id?e.to:e.from);
-       return n&&['figure','concept'].includes(n.kind);
-     }],
-     ['Report context','context',e=>['report','section','working_group','topic'].includes(
-       allNodes.get(e.from===id?e.to:e.from)?.kind)],
-     ['Caption evidence','evidence',e=>allNodes.get(e.from===id?e.to:e.from)?.kind==='mention'],
-     ['Image references','images',e=>allNodes.get(e.from===id?e.to:e.from)?.kind==='image'],
-     ['All relationships','all',()=>true]];
-   const unseen=all.filter(e=>!visible.has(e.from===id?e.to:e.from));
+   const n=allNodes.get(id);if(!n)return;
+   const unseen=[...new Set((incident.get(id)??[]).map(e=>e.from===id?e.to:e.from))]
+      .filter(other=>!visible.has(other));
    if(!unseen.length)return;
-   subsection('Expand network');
+   subsection('More connections');
    const actions=add(panel,'div',null,'expand-actions');
-   let any=false;
-   for(const [text,key,test] of options){
-     if(!unseen.some(test))continue;
-     any=true;
-     const count=unseen.filter(test).length;
-     const b=add(actions,'button',`${text} (${count})`);
-     b.addEventListener('click',()=>expand(id,key,test));
-   }
-   if(any)add(panel,'p','Reveals existing RDF neighbors in this exported graph.','source-note');
+   const target=n.kind==='figure'?'concepts':'figures';
+   const b=add(actions,'button',`Show remaining linked ${target} (${unseen.length})`);
+   b.type='button';b.addEventListener('click',()=>expand(id));
  }
- function expand(id,_category,test){
-   const priority={concept:0,figure:0,section:1,working_group:2,topic:2,report:3,image:4,mention:5};
-   const choices=(incident.get(id)??[]).filter(test).map(e=>e.from===id?e.to:e.from)
-     .filter(other=>!visible.has(other));
-   const unique=[...new Set(choices)].sort((a,b)=>{
-     const p=(priority[allNodes.get(a).kind]??9)-(priority[allNodes.get(b).kind]??9);
-     return p||names(a).localeCompare(names(b))||a.localeCompare(b);
-   });
-   const count=Math.min(config.expandBatch,config.maxVisible-visible.size);
-   const additions=unique.slice(0,Math.max(0,count));
-   if(!additions.length){notice('No additional nodes available in this exported neighborhood.');return;}
-   for(const other of additions){visible.add(other);place(other);}
-   draw();settle();selection=id;selectedEdge=null;renderNode(id);highlight();
+ function expand(id){
+   const choices=[...new Set((incident.get(id)??[]).map(e=>e.from===id?e.to:e.from))]
+     .filter(other=>!visible.has(other)).sort((a,b)=>names(a).localeCompare(names(b)));
+   if(!choices.length){notice('All directly linked nodes are already visible.');return;}
+   if(frame)cancelAnimationFrame(frame);frame=0;remaining=0;
+   for(const other of choices){visible.add(other);place(other);}
+   selection=id;selectedEdge=null;
+   draw();settle();renderNode(id);highlight();
  }
  function showEvidence(item){
    const div=add(panel,'div',null,'evidence'+(['excluded','ambiguous'].includes(item.resolution)?' warn':''));
@@ -957,8 +901,10 @@ footer .note {margin-left:auto;color:var(--muted)}
    }else if(item.candidates?.length){
      add(div,'small','Candidate only — not an accepted concept assertion.');
      for(const candidate of item.candidates.slice(0,4)){
-       const b=add(div,'button',names(candidate),'pill-button');
-       b.addEventListener('click',()=>selectNode(candidate));
+       const label=payload.conceptLabels[candidate]??names(candidate);
+       if(allNodes.has(candidate)){const b=add(div,'button',label,'pill-button');
+         b.addEventListener('click',()=>selectNode(candidate));}
+       else add(div,'small',`Candidate: ${label}`);
      }
    }
    if(item.qualityRule)add(div,'small',`Rule: ${item.qualityRule}`);
@@ -1009,47 +955,19 @@ footer .note {margin-left:auto;color:var(--muted)}
  }
  function detailsConcept(node){
    const c=node.concept;if(!c)return;
-   add(panel,'div',`${c.figuresInView} figure connections in this exported RDF neighborhood`,'stat');
+   const all=(incident.get(node.id)??[]).filter(e=>e.predicate.endsWith('#mentionsConcept'));
+   const shown=all.filter(e=>visible.has(e.from)&&visible.has(e.to)).length;
+   add(panel,'div',`${shown} visible of ${all.length} linked figures`,'stat');
    if(c.aliases.length){subsection('Glossary aliases');
      for(const alias of c.aliases)add(panel,'span',alias,'chip');}
-   const memberships=(incident.get(node.id)??[]).filter(e=>e.family==='glossary'||e.family==='topic');
-   if(memberships.length){subsection('Attribution & curated topics');
-     for(const e of memberships)navTo(e.from===node.id?e.to:e.from);}
    link(panel,'Glossary source ↗',c.source);
    const figures=(incident.get(node.id)??[]).filter(e=>e.predicate.endsWith('#mentionsConcept'))
-     .map(e=>e.from===node.id?e.to:e.from);
+     .map(e=>e.from===node.id?e.to:e.from).filter(id=>visible.has(id));
    if(figures.length){subsection(`Connected IPCC figures (${figures.length})`);
      for(const id of figures.slice(0,20))navTo(id);
      if(figures.length>20)add(panel,'p',`+${figures.length-20} more; use graph expansion.`, 'source-note');
    }
    add(panel,'p','Caption connections are observed lexical mentions, not verified visual depiction or causal relationships.','source-note');
- }
- function detailsMention(node){
-   const m=node.mention;if(!m)return;
-   if(['ambiguous','excluded'].includes(m.resolution)){
-     add(panel,'p','This is candidate evidence only. It does not establish an accepted figure–concept link.','banner');
-   }
-   subsection('Exact caption match');
-   showEvidence({...m,id:node.id});
-   add(panel,'div',`Match type: ${m.matchKind??'unknown'}`,'stat');
- }
- function detailsImage(node){
-   const img=node.image;if(!img)return;
-   if(img.url){
-     subsection('Published image reference');
-     const image=add(panel,'img',null,'hero');image.alt='Original IPCC figure image reference';
-     image.referrerPolicy='no-referrer';image.loading='lazy';
-     image.addEventListener('error',()=>image.replaceWith(
-       element('p','Image preview unavailable; open the source URL.','muted')));
-     image.src=img.url;
-     link(panel,'Open image source ↗',img.url);
-   }else add(panel,'p','The published image URL is missing or invalid.','muted');
- }
- function detailsTopic(node){
-   const t=node.topic;if(!t)return;
-   if(t.description)add(panel,'p',t.description);
-   add(panel,'p','This is an editorial SKOS collection, not a scientific subclass hierarchy.','source-note');
-   for(const url of t.references)link(panel,'IPCC report reference ↗',url);
  }
  function renderNode(id){
    const node=allNodes.get(id);if(!node)return;
@@ -1058,12 +976,6 @@ footer .note {margin-left:auto;color:var(--muted)}
    add(panel,'h2',node.label);
    if(node.kind==='figure')detailsFigure(node);
    else if(node.kind==='concept')detailsConcept(node);
-   else if(node.kind==='mention')detailsMention(node);
-   else if(node.kind==='image')detailsImage(node);
-   else if(node.kind==='topic')detailsTopic(node);
-   else if(node.kind==='section')add(panel,'p','A published IPCC section. Expand to navigate associated figures and working group.');
-   else if(node.kind==='working_group')add(panel,'p','A working group in the IPCC AR6 publication structure. Glossary attribution is distinct from figure membership.');
-   else if(node.kind==='report')add(panel,'p','The IPCC Sixth Assessment Report. Explore its working groups and figures through published RDF links.');
    relatedButtons(id);
    technical(node);
    panel.scrollTop=0;
@@ -1075,8 +987,6 @@ footer .note {margin-left:auto;color:var(--muted)}
    add(panel,'p',e.description||'A source-backed RDF instance relationship.');
    subsection('Direction');
    navTo(e.from);add(panel,'p',`↓ ${e.label} ↓`,'stat');navTo(e.to);
-   if(e.family==='candidate')add(panel,'p',
-     'Candidate interpretation only: this edge is not an accepted concept assertion.','banner');
    if(e.family==='caption'){
      add(panel,'p','This edge means the figure caption contains a resolved glossary mention. It does not imply visual depiction or scientific causality.','source-note');
      const figure=allNodes.get(e.from)?.figure;
@@ -1099,7 +1009,7 @@ footer .note {margin-left:auto;color:var(--muted)}
    selection=null;selectedEdge=null;highlight();panel.replaceChildren();
    add(panel,'div','Explore IPCC AR6','kicker');
    add(panel,'h2',payload.query);
-   add(panel,'p',`${payload.selectedFigures} selected figures · ${payload.nodes.filter(n=>n.kind==='concept').length} recorded concepts in the exported neighborhood.`);
+   add(panel,'p',`${payload.selectedFigures} selected figures · ${payload.initial.filter(id=>allNodes.get(id)?.kind==='concept').length} initially selected concepts.`);
    add(panel,'p','Select a circle or relationship to inspect its original RDF meaning, figure images and caption evidence.','muted');
    add(panel,'p','Drag nodes, scroll to zoom and use Expand network to reveal the remaining published connections.','muted');
    add(panel,'p','The export is self contained for graph interaction. IPCC image previews and source links still require internet access.','source-note');
@@ -1126,7 +1036,7 @@ footer .note {margin-left:auto;color:var(--muted)}
  };
  svg.addEventListener('pointerup',endPan);svg.addEventListener('pointercancel',endPan);
  svg.addEventListener('click',ev=>{
-   if(ev.target===svg||ev.target===world||ev.target===edgeLayer||ev.target===nodeLayer)showWelcome();
+   if(ev.target===svg||ev.target===world||ev.target===edgeLayer||ev.target===labelLayer||ev.target===nodeLayer)showWelcome();
  });
  svg.addEventListener('keydown',ev=>{
    if(ev.target!==svg)return;
@@ -1139,54 +1049,17 @@ footer .note {margin-left:auto;color:var(--muted)}
  byId('fit').addEventListener('click',fit);
  byId('reset').addEventListener('click',()=>{
    if(frame)cancelAnimationFrame(frame);frame=0;remaining=0;
-   visible=new Set(firstVisible);coords.clear();filter.value='all';activeFilter='all';
+   visible=new Set(firstVisible);coords.clear();
    draw();settle();showWelcome();
- });
- function revealFilteredNeighbors(family){
-   if(family==='all')return;
-   const budget=Math.min(20,config.maxVisible-visible.size);
-   if(budget<=0)return;
-   const additions=[];const queued=new Set();
-   const offer=id=>{
-     if(!visible.has(id)&&!queued.has(id)&&queued.size<budget){
-       queued.add(id);additions.push(id);
-     }
-   };
-   if(family==='candidate'){
-     // Candidate edges are one hop behind caption mentions. Reveal the actual
-     // intervening RDF nodes; never draw a synthetic figure-to-candidate edge.
-     for(const e of payload.edges){
-       if(queued.size>=budget)break;
-       if(e.predicate.endsWith('#hasCaptionMention')&&visible.has(e.from)){
-         const links=incident.get(e.to)??[];
-         for(const candidate of links.filter(x=>x.family==='candidate')){
-           if(queued.size+2>budget)break;
-           offer(e.to);offer(candidate.to);
-         }
-       }
-     }
-   }else{
-     for(const e of payload.edges){
-       if(queued.size>=budget)break;
-       if(e.family!==family)continue;
-       if(visible.has(e.from))offer(e.to);
-       else if(visible.has(e.to))offer(e.from);
-     }
-   }
-   for(const id of additions){visible.add(id);place(id);}
- }
- filter.addEventListener('change',()=>{
-   activeFilter=filter.value;revealFilteredNeighbors(activeFilter);draw();settle();
-   if(selectedEdge&&!edgeSVG.has(selectedEdge)){selectedEdge=null;showWelcome();}
  });
  const search=byId('search');
  function hideResults(){results.replaceChildren();results.style.display='none';}
  function populateResults(){
    const q=search.value.trim().toLocaleLowerCase();results.replaceChildren();
    if(!q){hideResults();return;}
-   const found=payload.nodes.filter(n=>n.label.toLocaleLowerCase().includes(q)||
+   const found=payload.nodes.filter(n=>visible.has(n.id)&&(n.label.toLocaleLowerCase().includes(q)||
        n.concept?.aliases.some(a=>a.toLocaleLowerCase().includes(q))||
-       n.figure?.id?.toLocaleLowerCase().includes(q)).slice(0,9);
+       n.figure?.id?.toLocaleLowerCase().includes(q))).slice(0,9);
    for(const n of found){
      const b=add(results,'button',n.label);b.type='button';
      add(b,'small',n.kind.replaceAll('_',' '));
@@ -1199,7 +1072,7 @@ footer .note {margin-left:auto;color:var(--muted)}
    if(ev.key==='Escape'){hideResults();search.blur();}
    if(ev.key==='Enter'){
      const q=search.value.trim().toLocaleLowerCase();
-     const found=payload.nodes.find(n=>n.label.toLocaleLowerCase().includes(q));
+     const found=payload.nodes.find(n=>visible.has(n.id)&&n.label.toLocaleLowerCase().includes(q));
      if(found){ev.preventDefault();hideResults();search.value='';selectNode(found.id);}
    }
  });

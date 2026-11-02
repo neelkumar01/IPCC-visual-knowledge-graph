@@ -1,26 +1,16 @@
-"""Create source-backed RDF relationships for IPCC AR6 figures and concepts.
+"""Build the source-backed bipartite IPCC AR6 Figure--Concept RDF graph.
 
-This is an *instance graph* (ABox) builder for the existing ontology/schema.py:
-- figure -> report section -> working group -> AR6 report;
-- figure -> image URL references (not downloaded/verified images);
-- figure -> individual caption mentions -> candidate/selected glossary concepts;
-- figure -> concept ONLY for resolved, non-excluded caption mentions.
+Only Figure and ScientificConcept resources are created. The sole
+instance-to-instance edge, ipcc:mentionsConcept, records an accepted glossary
+term match in a figure caption; it does not claim visual depiction or causality.
 
-No SKOS broader/related links, causes, depicts claims, or topic relations are
-inferred from co-occurrence. Ambiguous/excluded mentions remain visible solely
-as evidence, never accepted links. The original character offsets are checked
-against the complete caption in the Step 2 database before publishing RDF.
+Figure image URLs and report location are literal properties, not extra nodes.
+Caption-match spans, candidates and exclusions remain in concepts.db and are
+validated here before accepted links are published. Original captions are not
+exported unless explicitly requested and permitted by source reuse terms.
 
-Input databases are read-only. By default, full captions and glossary definitions
-are not redistributed in the RDF export; references, hashes, and matched spans
-allow verification against local source data. Review IPCC reuse permissions
-before publishing text, even short extracted snippets.
-
-Run from the project root (requires rdflib>=7,<8)::
-
+Run from the project root:
     python -m ontology.relationship
-
-Step 4's final ontology builder can merge this graph with schema and taxonomy.
 """
 
 from __future__ import annotations
@@ -37,17 +27,15 @@ import tempfile
 from urllib.parse import urlsplit
 
 from rdflib import Graph, Literal, URIRef
-from rdflib.namespace import DCTERMS, PROV, RDF, RDFS, SKOS, XSD
+from rdflib.namespace import DCTERMS, RDF, SKOS, XSD
 
-from ontology.schema import BASE_IRI, IPCC, RESOURCE, resource_iri
+from ontology.schema import IPCC, RESOURCE, resource_iri
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CORPUS = PROJECT_ROOT / "data" / "processed" / "corpus.db"
 DEFAULT_CONCEPTS = PROJECT_ROOT / "data" / "processed" / "concepts.db"
 DEFAULT_OUTPUT = PROJECT_ROOT / "ontology" / "ipcc_relationships.ttl"
-RELATIONSHIPS_IRI = URIRef(BASE_IRI + "relationships")
-REPORT_IRI = resource_iri("report", "AR6")
 WORKING_GROUPS = ("WG1", "WG2", "WG3")
 _RESOLVED = frozenset({"lexical", "explicit_expansion", "chemical_formula"})
 _UNRESOLVED = frozenset({"ambiguous", "excluded"})
@@ -56,7 +44,7 @@ _MATCH_KINDS = frozenset({"label", "alias", "mixed"})
 
 @dataclass(frozen=True, slots=True)
 class RelationshipResult:
-    """RDF instance graph and counts; no scientific causal facts asserted."""
+    """Bipartite instance graph and source-quality counts."""
 
     graph: Graph
     summary: dict[str, int]
@@ -71,7 +59,7 @@ def _sha256(path: Path) -> str:
 
 
 def _source_url(value: str, *, field: str, allow_http: bool = False) -> str:
-    """Validate URL references without fetching; legacy images may use HTTP."""
+    """Validate reference URLs without downloading them."""
     schemes = {"https", "http"} if allow_http else {"https"}
     if not isinstance(value, str):
         raise ValueError(f"Invalid {field}: expected {'HTTP(S)' if allow_http else 'HTTPS'} URL")
@@ -102,23 +90,24 @@ def _open_readonly(path: Path, expected_version: int) -> sqlite3.Connection:
 
 
 def _prefixes(graph: Graph) -> None:
-    for prefix, namespace in (("ipcc", IPCC), ("resource", RESOURCE),
-                              ("skos", SKOS), ("dcterms", DCTERMS),
-                              ("prov", PROV), ("xsd", XSD)):
+    for prefix, namespace in (
+        ("ipcc", IPCC), ("resource", RESOURCE),
+        ("skos", SKOS), ("dcterms", DCTERMS), ("xsd", XSD),
+    ):
         graph.bind(prefix, namespace)
 
 
 def _add_concepts(graph: Graph, db: sqlite3.Connection, glossary_source: URIRef) -> set[str]:
-    """Materialize glossary identities; membership is source attribution only."""
+    """Create concept nodes, labels and aliases; no attribution nodes."""
     known: set[str] = set()
-    rows = db.execute("SELECT term_id, canonical_label FROM concepts ORDER BY term_id")
-    for term_id, label in rows:
+    for term_id, label in db.execute(
+        "SELECT term_id, canonical_label FROM concepts ORDER BY term_id"
+    ):
         if not isinstance(term_id, str) or not term_id or not isinstance(label, str) or not label.strip():
             raise ValueError("Invalid glossary concept identity or label")
         node = resource_iri("concept", term_id)
         known.add(term_id)
         graph.add((node, RDF.type, IPCC.ScientificConcept))
-        graph.add((node, RDF.type, SKOS.Concept))
         graph.add((node, DCTERMS.identifier, Literal(term_id)))
         graph.add((node, SKOS.prefLabel, Literal(label, lang="en")))
         graph.add((node, DCTERMS.source, glossary_source))
@@ -133,13 +122,13 @@ def _add_concepts(graph: Graph, db: sqlite3.Connection, glossary_source: URIRef)
             raise ValueError("Invalid concept alias")
         graph.add((resource_iri("concept", term_id), SKOS.altLabel, Literal(alias, lang="en")))
 
+    # The original glossary attributions stay in SQLite. Validate them, but do
+    # not create WorkingGroup nodes or glossaryWorkingGroup relationships.
     for term_id, wg in db.execute(
         "SELECT term_id, working_group FROM concept_working_groups ORDER BY term_id, working_group"
     ):
         if term_id not in known or wg not in WORKING_GROUPS:
             raise ValueError("Invalid glossary working group attribution")
-        graph.add((resource_iri("concept", term_id), IPCC.glossaryWorkingGroup,
-                   resource_iri("working-group", wg)))
     return known
 
 
@@ -147,21 +136,10 @@ def _add_figures(
     graph: Graph, corpus: sqlite3.Connection, concepts: sqlite3.Connection,
     *, include_captions: bool,
 ) -> tuple[dict[str, str | None], dict[str, str], dict[str, str], int]:
-    """Assert report structure and cross-check every Step 3 figure against Step 2."""
-    graph.add((REPORT_IRI, RDF.type, IPCC.AssessmentReport))
-    graph.add((REPORT_IRI, DCTERMS.identifier, Literal("AR6")))
-    graph.add((REPORT_IRI, DCTERMS.source,
-               URIRef("https://www.ipcc.ch/assessment-report/ar6/")))
-    for wg in WORKING_GROUPS:
-        node = resource_iri("working-group", wg)
-        graph.add((node, RDF.type, IPCC.WorkingGroup))
-        graph.add((node, IPCC.workingGroupCode, Literal(wg)))
-        graph.add((node, IPCC.partOfReport, REPORT_IRI))
-
+    """Create Figure nodes and validate matching source records and image URLs."""
     caption_by_id: dict[str, str | None] = {}
     group_by_id: dict[str, str] = {}
     url_by_id: dict[str, str] = {}
-    seen_sections: set[tuple[str, str]] = set()
     query = ("SELECT figure_id, working_group, section, caption, caption_status, "
              "image_status, source_url FROM figures ORDER BY figure_id")
     for f in corpus.execute(query):
@@ -181,13 +159,11 @@ def _add_figures(
             raise ValueError(f"Invalid image status for {fid}")
 
         fig = resource_iri("figure", fid)
-        group = resource_iri("working-group", wg)
-        sec = resource_iri("section", f"{wg}:{section}")
         graph.add((fig, RDF.type, IPCC.Figure))
         graph.add((fig, DCTERMS.identifier, Literal(fid)))
         graph.add((fig, DCTERMS.source, URIRef(url)))
-        graph.add((fig, IPCC.figureInWorkingGroup, group))
-        graph.add((fig, IPCC.figureInSection, sec))
+        graph.add((fig, IPCC.workingGroupCode, Literal(wg)))
+        graph.add((fig, IPCC.sectionCode, Literal(section)))
         graph.add((fig, IPCC.captionStatus, Literal(status)))
         if caption is not None and status == "available":
             graph.add((fig, IPCC.captionSHA256,
@@ -195,20 +171,12 @@ def _add_figures(
             if include_captions:
                 graph.add((fig, IPCC.captionText, Literal(caption)))
 
-        key = (wg, section)
-        if key not in seen_sections:
-            graph.add((sec, RDF.type, IPCC.ReportSection))
-            if section.startswith("chapter-"):
-                graph.add((sec, RDF.type, IPCC.Chapter))
-            graph.add((sec, IPCC.sectionCode, Literal(section)))
-            graph.add((sec, IPCC.sectionOfWorkingGroup, group))
-            seen_sections.add(key)
         caption_by_id[fid] = caption
         group_by_id[fid] = wg
         url_by_id[fid] = url
 
-    # Crucial: the concept database can be stale even if both DB files are valid.
-    registered = set()
+    # Reject stale concepts.db input rather than silently building bad links.
+    registered: set[str] = set()
     for f in concepts.execute(
         "SELECT figure_id, working_group, source_url, caption_status, caption_sha256 "
         "FROM figures ORDER BY figure_id"
@@ -235,16 +203,11 @@ def _add_figures(
         if fid not in caption_by_id or not isinstance(position, int) or position < 0:
             raise ValueError("Invalid image reference identity")
         _source_url(url, field="image reference URL", allow_http=True)
-        image = resource_iri("image-reference", f"{fid}:{position}")
-        graph.add((image, RDF.type, IPCC.ImageReference))
-        graph.add((image, IPCC.imageURL, Literal(url, datatype=XSD.anyURI)))
-        graph.add((image, IPCC.imagePosition,
-                   Literal(position, datatype=XSD.nonNegativeInteger)))
-        graph.add((resource_iri("figure", fid), IPCC.hasImageReference, image))
+        # Image URLs are literal Figure properties, NOT separate image nodes.
+        graph.add((resource_iri("figure", fid), IPCC.imageURL, Literal(url, datatype=XSD.anyURI)))
         images_count += 1
         image_figures.add(fid)
 
-    # Image URLs are *candidate references*; missing images are allowed.
     for fid, status in corpus.execute("SELECT figure_id, image_status FROM figures"):
         if (fid in image_figures) != (status == "referenced"):
             raise ValueError(f"Image references disagree with status for {fid}")
@@ -255,7 +218,7 @@ def _add_mentions(
     graph: Graph, concepts: sqlite3.Connection,
     captions: dict[str, str | None], known_terms: set[str],
 ) -> dict[str, int]:
-    """Emit exact evidence and accepted links; preserve unresolved candidates."""
+    """Validate caption evidence; emit only accepted Figure--Concept links."""
     candidate_by_mention: dict[int, set[str]] = {}
     for mention_id, term_id in concepts.execute(
         "SELECT mention_id, term_id FROM mention_candidates ORDER BY mention_id, term_id"
@@ -283,34 +246,19 @@ def _add_mentions(
 
         selected = m["term_id"]
         candidates = candidate_by_mention.get(mid, set())
-        if not candidates or selected is not None and selected not in candidates:
+        if not candidates or (selected is not None and selected not in candidates):
             raise ValueError(f"Invalid candidate set for mention {mid}")
         if m["resolution"] in _UNRESOLVED and selected is not None:
             raise ValueError(f"Unresolved mention {mid} has an accepted concept")
         if m["resolution"] in _RESOLVED and selected not in known_terms:
             raise ValueError(f"Resolved mention {mid} lacks a known concept")
 
-        # Stable across rebuilding an SQLite database where autoincrement IDs may
-        # differ; two source mentions cannot share figure + character span.
-        node = resource_iri("caption-mention", f"{fid}:{start}:{end}")
-        fig = resource_iri("figure", fid)
-        graph.add((node, RDF.type, IPCC.CaptionMention))
-        graph.add((node, IPCC.mentionInFigure, fig))
-        graph.add((fig, IPCC.hasCaptionMention, node))
-        graph.add((node, PROV.wasDerivedFrom, fig))
-        graph.add((node, IPCC.matchedText, Literal(matched)))
-        graph.add((node, IPCC.startOffset, Literal(start, datatype=XSD.nonNegativeInteger)))
-        graph.add((node, IPCC.endOffset, Literal(end, datatype=XSD.nonNegativeInteger)))
-        graph.add((node, IPCC.matchKind, Literal(m["match_kind"])))
-        graph.add((node, IPCC.resolution, Literal(m["resolution"])))
-        if m["quality_rule"] is not None:
-            graph.add((node, IPCC.qualityRule, Literal(m["quality_rule"])))
-        for term_id in sorted(candidates):
-            graph.add((node, IPCC.candidateConcept, resource_iri("concept", term_id)))
+        # Ambiguous/excluded mention records are checked but never emitted as
+        # RDF nodes or Figure--Concept edges.
         seen_candidates.add(mid)
         if selected is not None:
+            fig = resource_iri("figure", fid)
             concept = resource_iri("concept", selected)
-            graph.add((node, IPCC.denotesConcept, concept))
             graph.add((fig, IPCC.mentionsConcept, concept))
             accepted_pairs.add((fid, selected))
             counts["resolved_mentions"] += 1
@@ -335,12 +283,7 @@ def build_relationship_graph(
     *,
     include_captions: bool = False,
 ) -> RelationshipResult:
-    """Build a provenance-checked RDF relationship graph without writing files.
-
-    The Step 3 concepts DB must have been built from the *same* corpus SQLite
-    file, with the quality-aware v2 schema. Any stale input or bad evidence
-    raises before a graph can be published. No inferred relations are added.
-    """
+    """Build a verified bipartite instance graph without changing input DBs."""
     corpus_path, concepts_path = Path(corpus_path), Path(concepts_path)
     if corpus_path.resolve() == concepts_path.resolve():
         raise ValueError("Corpus and concept DB must be distinct files")
@@ -357,15 +300,7 @@ def build_relationship_graph(
             if not meta.get("vocabulary_sha256"):
                 raise ValueError("Concept DB is missing vocabulary provenance")
             glossary = URIRef(_source_url(meta.get("vocabulary_derived_export"), field="glossary source"))
-            official = URIRef(_source_url(meta.get("vocabulary_official_glossary"), field="official glossary"))
-
-            graph.add((RELATIONSHIPS_IRI, RDF.type, PROV.Entity))
-            graph.add((RELATIONSHIPS_IRI, DCTERMS.description, Literal(
-                "Project-generated RDF graph of source-backed IPCC AR6 figure, "
-                "section and caption-mention associations; no scientific "
-                "causation or visually depicted concepts are inferred.", lang="en")))
-            graph.add((RELATIONSHIPS_IRI, DCTERMS.source, glossary))
-            graph.add((RELATIONSHIPS_IRI, RDFS.seeAlso, official))
+            _source_url(meta.get("vocabulary_official_glossary"), field="official glossary")
 
             known = _add_concepts(graph, concepts, glossary)
             captions, _, _, images_count = _add_figures(
@@ -373,7 +308,6 @@ def build_relationship_graph(
             )
             mentions = _add_mentions(graph, concepts, captions, known)
 
-    # Avoid publishing a graph based on files that changed during the read.
     if _sha256(corpus_path) != corpus_digest or _sha256(concepts_path) != concepts_digest:
         raise ValueError("Source database changed while relationships were being built")
     summary = {
@@ -394,7 +328,7 @@ def write_relationships(
     *,
     include_captions: bool = False,
 ) -> dict[str, int]:
-    """Safely export Turtle; source data and prior valid output stay untouched on error."""
+    """Atomically export Turtle after checking an exact RDF round-trip."""
     corpus_path, concepts_path, output_path = map(Path, (corpus_path, concepts_path, output_path))
     if len({p.resolve() for p in (corpus_path, concepts_path, output_path)}) != 3:
         raise ValueError("Inputs and RDF output must have distinct paths")
@@ -418,14 +352,14 @@ def write_relationships(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Export source-backed IPCC AR6 figure/concept RDF relationships."
+        description="Export source-backed IPCC AR6 Figure--Concept RDF links."
     )
     parser.add_argument("--corpus", type=Path, default=DEFAULT_CORPUS)
     parser.add_argument("--concepts", type=Path, default=DEFAULT_CONCEPTS)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument(
         "--include-captions", action="store_true",
-        help="Include original full captions in RDF (review IPCC reuse permissions).",
+        help="Include full IPCC captions in RDF (review source reuse permissions first).",
     )
     args = parser.parse_args()
     summary = write_relationships(
@@ -433,8 +367,7 @@ def main() -> None:
     )
     print(
         f"Relationships: {summary['figures']} figures; {summary['concepts']} concepts; "
-        f"{summary.get('total_mentions', 0)} evidence mentions; "
-        f"{summary['figure_concept_links']} resolved figure-concept links; "
+        f"{summary['figure_concept_links']} accepted Figure--Concept links; "
         f"{summary['rdf_triples']} RDF triples."
     )
     print(f"Turtle: {args.output}")

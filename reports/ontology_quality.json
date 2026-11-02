@@ -1,7 +1,7 @@
 {
   "report_type": "ontology_build_quality",
-  "build_version": "1.0",
-  "generated_at": "2026-10-20T13:32:08+00:00",
+  "build_version": "2.0",
+  "generated_at": "2026-11-02T07:39:10+00:00",
   "inputs": {
     "corpus_sha256": "2be04603057d3a2e0c8f330cb686d252f0628da3ab06ce55e9ae6ab7fcfaf3c2",
     "concepts_sha256": "c51a3775f86dd70afca5ee064125152496533a5b489eb81b786b1ec3c50bcbfc",
@@ -21,14 +21,9 @@
     "excluded_mentions": 139,
     "figure_concept_links": 6178,
     "candidate_links": 10935,
-    "rdf_triples": 143082,
-    "schema_triples": 154,
-    "taxonomy_triples": 626,
-    "relationship_triples": 142762,
-    "topic_categories": 8,
-    "categorized_concepts": 115,
-    "uncategorized_concepts": 805,
-    "category_memberships": 116
+    "rdf_triples": 20782,
+    "schema_triples": 46,
+    "relationship_triples": 20736
   },
   "by_working_group": {
     "WG1": {
@@ -50,13 +45,15 @@
   "validation": {
     "rdf_integrity": "passed",
     "shacl": "passed",
-    "shacl_shapes": 7
+    "shacl_shapes": 2
   },
   "notes": [
-    "Caption mentions and project-curated navigation facets do not establish scientific causation or visual depiction.",
-    "Ambiguous/excluded mentions retain candidate evidence but do not generate accepted figure-concept links.",
-    "Full captions and glossary definitions are omitted unless explicitly opted in; matched text snippets remain.",
-    "Scientific extraction accuracy needs human review; RDF structural correctness does not imply scientific validity.",
+    "The only instance-to-instance edge is Figure -> mentionsConcept -> ScientificConcept.",
+    "Caption mentions and exclusion candidates remain in concepts.db, not as graph nodes.",
+    "Image URLs, working group and section are Figure attributes, not graph nodes.",
+    "Accepted Figure--Concept links are caption matches, not proof of image depiction or causality.",
+    "Full captions and glossary definitions are omitted unless explicitly permitted and opted in.",
+    "Scientific extraction accuracy needs human review; RDF structural validity is not scientific validity.",
     "Published IPCC material and glossary-derived content may have reuse restrictions."
   ]
 }

@@ -19,10 +19,10 @@ import sqlite3
 from typing import Iterator, Literal
 
 from rdflib import Graph
-from rdflib.namespace import DCTERMS, RDF, RDFS, SKOS
+from rdflib.namespace import DCTERMS, RDF
 
 from concepts.vocabulary import normalize_term
-from ontology.schema import IPCC, resource_iri
+from ontology.schema import IPCC
 
 
 MatchMode = Literal["auto", "concept", "caption"]
@@ -70,7 +70,6 @@ class Concept:
     aliases: tuple[str, ...]
     glossary_working_groups: tuple[str, ...]
     source_series: tuple[str, ...]
-    topics: tuple[str, ...]
     figure_count: int
 
 
@@ -378,7 +377,7 @@ class IPCCGraph:
         )
 
     def concept(self, query: str) -> Concept:
-        """Retrieve a glossary entry, its recorded attributions and graph usage."""
+        """Retrieve a glossary entry and its figure-connection count."""
         query = _nonempty(query, "query")
         term_id = self._resolve_concept(query)
         if term_id is None:
@@ -400,13 +399,8 @@ class IPCCGraph:
                 "SELECT series FROM concept_source_series "
                 "WHERE term_id = ? ORDER BY series", (term_id,),
             ))
-        node = resource_iri("concept", term_id)
-        topics = tuple(sorted(
-            str(self._graph.value(category, RDFS.label))
-            for category in self._graph.subjects(SKOS.member, node)
-        ))
         return Concept(term_id, row["canonical_label"], row["definition"],
-                       aliases, groups, series, topics,
+                       aliases, groups, series,
                        len(self._by_concept.get(term_id, ())))
 
     def explore(
